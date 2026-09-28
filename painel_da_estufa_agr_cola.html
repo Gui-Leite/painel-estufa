@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel da Estufa - Monitoramento & Histórico</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Historical Graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        emerald: {
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            900: '#064e3b',
+                            950: '#022c22',
+                        },
+                        darkbg: '#080d11',
+                        cardbg: '#111822',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #080d11;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass-card {
+            background: rgba(17, 24, 34, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .glass-card-hover {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card-hover:hover {
+            transform: translateY(-2px);
+            border-color: rgba(16, 185, 129, 0.35);
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.12);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080d11;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #10b981;
+        }
+
+        @keyframes pulse-emerald {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.15); }
+        }
+        .pulse-live {
+            animation: pulse-emerald 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-emerald-500 selection:text-white">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-30 glass-card border-b border-slate-800/80 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-900/40">
+                    <i class="fa-solid fa-leaf text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                        Estufa Agrícola
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/60 font-semibold">Adafruit IO</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Telemetria & Histórico em Tempo Real</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2.5 w-full sm:w-auto justify-end">
+                <div id="statusBadge" class="flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-950/70 border border-emerald-800/60 text-xs font-medium text-emerald-300">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-live"></span>
+                    <span id="statusText">Sincronizado</span>
+                </div>
+
+                <div class="hidden md:flex items-center space-x-1.5 text-xs text-slate-400 bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800">
+                    <i class="fa-regular fa-clock text-slate-500"></i>
+                    <span id="headerLastUpdated">Carregando...</span>
+                </div>
+
+                <button id="btnRefresh" onclick="fetchAllData()" title="Atualizar dados agora" class="p-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-emerald-400 border border-slate-700/60 transition-colors">
+                    <i id="refreshIcon" class="fa-solid fa-arrows-rotate text-xs"></i>
+                </button>
+
+                <button onclick="openSettingsModal()" title="Configurações" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-900/30 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-gear text-xs"></i>
+                    <span>Ajustes</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl mx-auto w-full px-4 lg:px-8 py-5 flex-grow space-y-6">
+
+        <!-- DEMO BANNER -->
+        <div id="demoBanner" class="hidden glass-card border-amber-500/30 bg-amber-950/20 p-3.5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-200 text-xs">
+            <div class="flex items-center space-x-2.5">
+                <i class="fa-solid fa-triangle-exclamation text-amber-400 text-base"></i>
+                <span><strong>Modo Demonstração:</strong> Exibindo dados de exemplo. Insira suas credenciais do Adafruit IO para conectar ao sensor real.</span>
+            </div>
+            <button onclick="openSettingsModal()" class="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs whitespace-nowrap transition-colors">
+                Configurar Chave API
+            </button>
+        </div>
+
+        <!-- TOP SECTION: PHOTO + CURRENT SENSOR CARDS -->
+        <div class="flex flex-col lg:flex-row items-start gap-5">
+
+            <!-- COMPACT GREENHOUSE PHOTO CARD (Fixed max-width ~360px on desktop) -->
+            <div class="w-full lg:w-[360px] lg:shrink-0 glass-card rounded-2xl p-3.5 space-y-3 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-camera text-emerald-400 text-xs"></i>
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Foto da Estufa</h2>
+                    </div>
+                    <button onclick="openPhotoModal()" class="text-[11px] text-emerald-400 hover:text-emerald-300 font-medium flex items-center gap-1">
+                        <i class="fa-solid fa-pen-to-square"></i> Alterar
+                    </button>
+                </div>
+
+                <!-- Image container: Compact aspect ratio -->
+                <div class="relative group rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shadow-inner h-48 sm:h-52 w-full flex items-center justify-center">
+                    <img id="greenhouseImage" 
+                         src="https://i.imgur.com/iKXzr8l.jpg" 
+                         alt="Foto da Estufa" 
+                         class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                         onerror="this.src='https://placehold.co/600x400/0f172a/34d399?text=Estufa+Foto'">
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-70"></div>
+
+                    <div class="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-[11px] text-slate-200">
+                        <span class="bg-slate-900/90 backdrop-blur-md px-2 py-0.5 rounded-md border border-slate-700/60 font-medium">
+                            <i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i> Canteiro A1
+                        </span>
+                        <span class="bg-emerald-950/90 backdrop-blur-md text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-800/60 font-medium">
+                            HD 1080p
+                        </span>
+                    </div>
+                </div>
+
+                <div class="text-[11px] text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/60 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-emerald-400"></i> Armazenamento:</span>
+                    <strong class="text-slate-300">Local / Direct URL</strong>
+                </div>
+            </div>
+
+            <!-- SENSOR READINGS GRID (5 Feeds) -->
+            <div class="w-full flex-grow space-y-3">
+                <div class="flex items-center justify-between px-1">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-emerald-400"></i> Leituras Atuais
+                    </h2>
+                    <span class="text-[11px] text-slate-500">Auto-sincronizado</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
+                    <!-- SENSOR 1: TEMP DHT22 -->
+                    <div class="glass-card glass-card-hover rounded-2xl p-3.5 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center">
+                                    <i class="fa-solid fa-temperature-half text-sm"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xs font-semibold text-slate-300">Temp. DHT22</h3>
+                                    <p class="text-[10px] font-mono text-slate-500">dht22.temperaturadht22</p>
+                                </div>
+                            </div>
+                            <span id="trend-dht-temp" class="text-xs font-semibold text-emerald-400"><i class="fa-solid fa-minus"></i></span>
+                        </div>
+                        <div class="flex items-baseline justify-between pt-1">
+                            <div class="text-2xl font-bold text-white tracking-tight font-mono">
+                                <span id="val-dht-temp">--.-</span><span class="text-sm text-slate-400 font-normal"> °C</span>
+                            </div>
+                            <span id="badge-dht-temp" class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-400 border border-emerald-800/60">Ideal</span>
+                        </div>
+                    </div>
+
+                    <!-- SENSOR 2: TEMP BMP280 -->
+                    <div class="glass-card glass-card-hover rounded-2xl p-3.5 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center">
+                                    <i class="fa-solid fa-thermometer text-sm"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xs font-semibold text-slate-300">Temp. BMP280</h3>
+                                    <p class="text-[10px] font-mono text-slate-500">bmp180.temperaturabmp</p>
+                                </div>
+                            </div>
+                            <span id="trend-bmp-temp" class="text-xs font-semibold text-emerald-400"><i class="fa-solid fa-minus"></i></span>
+                        </div>
+                        <div class="flex items-baseline justify-between pt-1">
+                            <div class="text-2xl font-bold text-white tracking-tight font-mono">
+                                <span id="val-bmp-temp">--.-</span><span class="text-sm text-slate-400 font-normal"> °C</span>
+                            </div>
+                            <span id="badge-bmp-temp" class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-950 text-emerald-400 border border-emerald-800/60">Normal</span>
+                        </div>
+                    </div>
+
+                    <!-- SENSOR 3: UMIDADE DHT22 -->
+                    <div class="glass-card glass-card-hover rounded-2xl p-3.5 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                                    <i class="fa-solid fa-droplet text-sm"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xs font-semibold text-slate-300">Umidade Ar</h3>
+                                    <p class="text-[10px] font-mono text-slate-500">dht22.umidadedht22</p>
+                                </div>
+                            </div>
+                            <span id="trend-dht-umid" class="text-xs font-semibold text-emerald-400"><i class="fa-solid fa-minus"></i></span>
+                        </div>
+                        <div class="flex items-baseline justify-between pt-1">
+                            <div class="text-2xl font-bold text-white tracking-tight font-mono">
+                                <span id="val-dht-umid">--.-</span><span class="text-sm text-slate-400 font-normal"> %</span>
+                            </div>
+                            <span id="badge-dht-umid" class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-cyan-950 text-cyan-300 border border-cyan-800/60">Ótimo</span>
+                        </div>
+                    </div>
+
+                    <!-- SENSOR 4: PRESSÃO BMP280 -->
+                    <div class="glass-card glass-card-hover rounded-2xl p-3.5 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center">
+                                    <i class="fa-solid fa-gauge-high text-sm"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xs font-semibold text-slate-300">Pressão Atmos.</h3>
+                                    <p class="text-[10px] font-mono text-slate-500">bmp180.pressaobmp</p>
+                                </div>
+                            </div>
+                            <span id="trend-bmp-pres" class="text-xs font-semibold text-emerald-400"><i class="fa-solid fa-minus"></i></span>
+                        </div>
+                        <div class="flex items-baseline justify-between pt-1">
+                            <div class="text-2xl font-bold text-white tracking-tight font-mono">
+                                <span id="val-bmp-pres">----.-</span><span class="text-xs text-slate-400 font-normal"> hPa</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-950 text-purple-300 border border-purple-800/60">Estável</span>
+                        </div>
+                    </div>
+
+                    <!-- SENSOR 5: LUMINOSIDADE BH1750 -->
+                    <div class="sm:col-span-2 lg:col-span-2 glass-card glass-card-hover rounded-2xl p-3.5 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                                    <i class="fa-solid fa-sun text-sm"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xs font-semibold text-slate-300">Luminosidade (BH1750)</h3>
+                                    <p class="text-[10px] font-mono text-slate-500">luminosidade.lux</p>
+                                </div>
+                            </div>
+                            <span id="trend-lux" class="text-xs font-semibold text-emerald-400"><i class="fa-solid fa-minus"></i></span>
+                        </div>
+                        <div class="flex items-baseline justify-between pt-1">
+                            <div class="text-2xl font-bold text-white tracking-tight font-mono">
+                                <span id="val-lux">-----</span><span class="text-sm text-slate-400 font-normal"> Lux</span>
+                            </div>
+                            <span id="badge-lux" class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-950 text-amber-300 border border-amber-800/60">Ensolarado</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM SECTION: HISTORICAL GRAPH (24h / 30d) -->
+        <section class="glass-card rounded-2xl p-4 sm:p-6 space-y-5 shadow-xl">
+            
+            <!-- Controls Header: Period Toggle + Metric Selectors -->
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+                <div>
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-emerald-400"></i> Histórico Registrado
+                    </h2>
+                    <p class="text-xs text-slate-400">Análise de telemetria contínua armazenada no Adafruit IO</p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+                    <!-- Period Toggle Buttons -->
+                    <div class="bg-slate-900 p-1 rounded-xl border border-slate-800 flex items-center space-x-1 text-xs">
+                        <button id="btnPeriod24h" onclick="setChartPeriod('24h')" class="px-3 py-1.5 rounded-lg font-semibold transition-all bg-emerald-600 text-white shadow-sm">
+                            24 Horas
+                        </button>
+                        <button id="btnPeriod30d" onclick="setChartPeriod('30d')" class="px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all">
+                            30 Dias
+                        </button>
+                    </div>
+
+                    <!-- Metric Tabs -->
+                    <div class="bg-slate-900 p-1 rounded-xl border border-slate-800 flex items-center space-x-1 text-xs overflow-x-auto w-full sm:w-auto">
+                        <button id="btnMetricTemp" onclick="setChartMetric('temp')" class="px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-800 text-emerald-400 border border-slate-700/60 whitespace-nowrap">
+                            <i class="fa-solid fa-temperature-half mr-1"></i> Temp.
+                        </button>
+                        <button id="btnMetricUmid" onclick="setChartMetric('umid')" class="px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-white whitespace-nowrap">
+                            <i class="fa-solid fa-droplet mr-1"></i> Umidade
+                        </button>
+                        <button id="btnMetricPres" onclick="setChartMetric('pres')" class="px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-white whitespace-nowrap">
+                            <i class="fa-solid fa-gauge-high mr-1"></i> Pressão
+                        </button>
+                        <button id="btnMetricLux" onclick="setChartMetric('lux')" class="px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-white whitespace-nowrap">
+                            <i class="fa-solid fa-sun mr-1"></i> Lux
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHART CANVAS CONTAINER -->
+            <div class="relative w-full h-72 sm:h-80 md:h-96">
+                <canvas id="historyChart"></canvas>
+            </div>
+
+            <!-- SUMMARY STATS FOOTER BAR -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-800/80 text-center text-xs">
+                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
+                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Média do Período</span>
+                    <strong id="statAvg" class="text-slate-200 text-sm font-mono">--</strong>
+                </div>
+                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
+                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Valor Mínimo</span>
+                    <strong id="statMin" class="text-emerald-400 text-sm font-mono">--</strong>
+                </div>
+                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
+                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Valor Máximo</span>
+                    <strong id="statMax" class="text-red-400 text-sm font-mono">--</strong>
+                </div>
+                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60">
+                    <span class="text-slate-500 block text-[10px] uppercase font-semibold">Total Amostras</span>
+                    <strong id="statCount" class="text-cyan-400 text-sm font-mono">--</strong>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="glass-card border-t border-slate-800/80 py-3.5 px-4 lg:px-8 mt-auto">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <div>
+                Painel da Estufa &copy; 2026 &bull; Conectado via Adafruit IO REST API
+            </div>
+            <div class="flex items-center space-x-4">
+                <span>Histórico: <strong class="text-slate-400">24h / 30d</strong></span>
+                <a href="https://io.adafruit.com" target="_blank" class="hover:text-emerald-400 transition-colors">io.adafruit.com <i class="fa-solid fa-up-right-from-square text-[10px]"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass-card w-full max-w-lg rounded-2xl border border-slate-700/80 p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-emerald-400"></i>
+                    <h3 class="text-base font-bold text-white">Configurações Adafruit IO</h3>
+                </div>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="settingsForm" onsubmit="saveSettings(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Adafruit Username</label>
+                    <input type="text" id="cfgUsername" required class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-white font-mono outline-none">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">AIO Key (Chave Secreta)</label>
+                    <input type="password" id="cfgAioKey" class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-white font-mono outline-none" placeholder="aio_xxxxxxxx">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">URL da Foto da Estufa</label>
+                    <input type="url" id="cfgPhotoUrl" class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-white font-mono outline-none">
+                </div>
+
+                <div class="pt-2 border-t border-slate-800">
+                    <h4 class="font-semibold text-slate-400 mb-2 uppercase tracking-wider">Chaves dos Feeds</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono">
+                        <div>
+                            <span class="text-slate-500 text-[10px]">Temp. DHT22:</span>
+                            <input type="text" id="keyDhtTemp" value="dht22.temperaturadht22" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-300">
+                        </div>
+                        <div>
+                            <span class="text-slate-500 text-[10px]">Umidade DHT22:</span>
+                            <input type="text" id="keyDhtUmid" value="dht22.umidadedht22" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-300">
+                        </div>
+                        <div>
+                            <span class="text-slate-500 text-[10px]">Temp. BMP280:</span>
+                            <input type="text" id="keyBmpTemp" value="bmp180.temperaturabmp" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-300">
+                        </div>
+                        <div>
+                            <span class="text-slate-500 text-[10px]">Pressão BMP280:</span>
+                            <input type="text" id="keyBmpPres" value="bmp180.pressaobmp" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-300">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <span class="text-slate-500 text-[10px]">Luminosidade Lux:</span>
+                            <input type="text" id="keyLux" value="luminosidade.lux" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-300">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2 pt-2">
+                    <input type="checkbox" id="cfgDemoMode" class="rounded border-slate-700 bg-slate-900 text-emerald-500">
+                    <label for="cfgDemoMode" class="text-slate-300">Forçar Modo Demonstração (Dados simulados)</label>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+                    <button type="button" onclick="closeSettingsModal()" class="px-3.5 py-1.5 rounded-xl border border-slate-700 text-slate-300">Cancelar</button>
+                    <button type="submit" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">Salvar Configurações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- PHOTO MODAL -->
+    <div id="photoModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass-card w-full max-w-md rounded-2xl border border-slate-700/80 p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-image text-emerald-400"></i> Alterar Foto da Estufa
+                </h3>
+                <button onclick="closePhotoModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-300 mb-1">Cole o Link Direto da Imagem (URL)</label>
+                    <input type="url" id="photoUrlInput" class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-xl px-3 py-2 text-white outline-none" placeholder="https://i.imgur.com/...">
+                </div>
+
+                <div class="text-[11px] text-slate-500">
+                    Funciona perfeitamente com URLs do Imgur, Postimages ou qualquer imagem hospedada publicamente na Web.
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-800 text-xs">
+                <button onclick="closePhotoModal()" class="px-3 py-1.5 rounded-xl border border-slate-700 text-slate-300">Cancelar</button>
+                <button onclick="savePhotoURL()" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">Salvar Foto</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // GLOBAL APP STATE & CONFIGURATION
+        let appConfig = {
+            username: 'GuilhermeFLeite',
+            aioKey: 'aio_bLTx133FXmL7Qrxd67CgQax5kpaj',
+            photoUrl: 'https://i.imgur.com/iKXzr8l.jpg',
+            demoMode: false,
+            feeds: {
+                dhtTemp: 'dht22.temperaturadht22',
+                dhtUmid: 'dht22.umidadedht22',
+                bmpTemp: 'bmp180.temperaturabmp',
+                bmpPres: 'bmp180.pressaobmp',
+                lux: 'luminosidade.lux'
+            }
+        };
+
+        let currentPeriod = '24h'; // '24h' or '30d'
+        let currentMetric = 'temp'; // 'temp', 'umid', 'pres', 'lux'
+        let chartInstance = null;
+        let lastRealTimeValues = {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConfigFromStorage();
+            applyConfigToInputs();
+            initChart();
+            fetchAllData();
+
+            // Auto refresh live data every 30 seconds
+            setInterval(() => {
+                fetchAllData();
+            }, 30000);
+        });
+
+        function loadConfigFromStorage() {
+            const saved = localStorage.getItem('estufa_aio_config');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    appConfig = { ...appConfig, ...parsed };
+                } catch(e) {
+                    console.error("Erro ao ler localStorage:", e);
+                }
+            }
+        }
+
+        function saveConfigToStorage() {
+            localStorage.setItem('estufa_aio_config', JSON.stringify(appConfig));
+        }
+
+        function applyConfigToInputs() {
+            document.getElementById('cfgUsername').value = appConfig.username || '';
+            document.getElementById('cfgAioKey').value = appConfig.aioKey || '';
+            document.getElementById('cfgPhotoUrl').value = appConfig.photoUrl || 'https://i.imgur.com/iKXzr8l.jpg';
+            document.getElementById('cfgDemoMode').checked = appConfig.demoMode;
+
+            document.getElementById('keyDhtTemp').value = appConfig.feeds.dhtTemp;
+            document.getElementById('keyDhtUmid').value = appConfig.feeds.dhtUmid;
+            document.getElementById('keyBmpTemp').value = appConfig.feeds.bmpTemp;
+            document.getElementById('keyBmpPres').value = appConfig.feeds.bmpPres;
+            document.getElementById('keyLux').value = appConfig.feeds.lux;
+
+            document.getElementById('greenhouseImage').src = appConfig.photoUrl;
+            document.getElementById('photoUrlInput').value = appConfig.photoUrl;
+        }
+
+        async function fetchAllData() {
+            const refreshIcon = document.getElementById('refreshIcon');
+            refreshIcon.classList.add('fa-spin');
+
+            if (appConfig.demoMode || !appConfig.username) {
+                loadMockLiveData();
+                renderHistoricalChart();
+                finishFetchUI(true, "Modo Demo");
+                return;
+            }
+
+            const headers = {};
+            if (appConfig.aioKey) {
+                headers['X-AIO-Key'] = appConfig.aioKey;
+            }
+
+            let liveSuccess = false;
+
+            // Fetch Last Values for Realtime Cards
+            const feedEntries = Object.entries(appConfig.feeds);
+            await Promise.all(feedEntries.map(async ([key, feedKey]) => {
+                const url = `https://io.adafruit.com/api/v2/${appConfig.username}/feeds/${feedKey}/data/last`;
+                try {
+                    const res = await fetch(url, { headers });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    if (data && data.value !== undefined) {
+                        updateLiveCard(key, parseFloat(data.value));
+                        liveSuccess = true;
+                    }
+                } catch (e) {
+                    console.warn(`Erro no feed ${feedKey}:`, e);
+                }
+            }));
+
+            if (!liveSuccess) {
+                loadMockLiveData();
+                showDemoBanner(true);
+                updateStatusBadge(false, "Offline / Demo");
+            } else {
+                showDemoBanner(false);
+                updateStatusBadge(true, "Sincronizado");
+            }
+
+            // Fetch and update Historical Chart
+            await renderHistoricalChart();
+
+            finishFetchUI(liveSuccess);
+        }
+
+        function updateLiveCard(key, val) {
+            const prevVal = lastRealTimeValues[key];
+            lastRealTimeValues[key] = val;
+
+            let valElem, badgeElem, trendElem;
+
+            switch (key) {
+                case 'dhtTemp':
+                    valElem = document.getElementById('val-dht-temp');
+                    if (valElem) valElem.innerText = val.toFixed(1);
+                    updateTrend('trend-dht-temp', val, prevVal);
+                    break;
+                case 'bmpTemp':
+                    valElem = document.getElementById('val-bmp-temp');
+                    if (valElem) valElem.innerText = val.toFixed(1);
+                    updateTrend('trend-bmp-temp', val, prevVal);
+                    break;
+                case 'dhtUmid':
+                    valElem = document.getElementById('val-dht-umid');
+                    if (valElem) valElem.innerText = val.toFixed(1);
+                    updateTrend('trend-dht-umid', val, prevVal);
+                    break;
+                case 'bmpPres':
+                    valElem = document.getElementById('val-bmp-pres');
+                    if (valElem) valElem.innerText = val.toFixed(1);
+                    updateTrend('trend-bmp-pres', val, prevVal);
+                    break;
+                case 'lux':
+                    valElem = document.getElementById('val-lux');
+                    if (valElem) valElem.innerText = Math.round(val).toLocaleString('pt-BR');
+                    updateTrend('trend-lux', val, prevVal);
+                    break;
+            }
+        }
+
+        function updateTrend(elemId, current, prev) {
+            const elem = document.getElementById(elemId);
+            if (!elem) return;
+            if (prev === undefined || current === prev) {
+                elem.innerHTML = '<i class="fa-solid fa-minus text-slate-500"></i>';
+            } else if (current > prev) {
+                elem.innerHTML = '<i class="fa-solid fa-arrow-trend-up text-emerald-400"></i>';
+            } else {
+                elem.innerHTML = '<i class="fa-solid fa-arrow-trend-down text-red-400"></i>';
+            }
+        }
+
+        function loadMockLiveData() {
+            const mock = {
+                dhtTemp: 24.2 + (Math.random() * 0.8 - 0.4),
+                bmpTemp: 24.6 + (Math.random() * 0.6 - 0.3),
+                dhtUmid: 64.5 + (Math.random() * 2.0 - 1.0),
+                bmpPres: 1013.4 + (Math.random() * 1.0 - 0.5),
+                lux: 19400 + Math.floor(Math.random() * 800 - 400)
+            };
+            Object.entries(mock).forEach(([k, v]) => updateLiveCard(k, v));
+        }
+
+        async function fetchFeedHistory(feedKey) {
+            if (appConfig.demoMode || !appConfig.username) {
+                return generateMockHistory(feedKey, currentPeriod);
+            }
+
+            const headers = {};
+            if (appConfig.aioKey) headers['X-AIO-Key'] = appConfig.aioKey;
+
+            // Adafruit IO API supports parameter 'hours' or 'limit'
+            const hours = currentPeriod === '24h' ? 24 : 720;
+            const url = `https://io.adafruit.com/api/v2/${appConfig.username}/feeds/${feedKey}/data?hours=${hours}`;
+
+            try {
+                const res = await fetch(url, { headers });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                if (Array.isArray(data) && data.length > 0) {
+                    // Sort chronologically
+                    return data.reverse().map(item => ({
+                        time: new Date(item.created_at),
+                        value: parseFloat(item.value)
+                    }));
+                }
+            } catch (e) {
+                console.warn(`Histórico do Adafruit IO para ${feedKey} falhou, usando simulação:`, e);
+            }
+
+            return generateMockHistory(feedKey, currentPeriod);
+        }
+
+        function generateMockHistory(feedKey, period) {
+            const points = period === '24h' ? 24 : 30;
+            const history = [];
+            const now = new Date();
+
+            let baseVal = 24.0;
+            let amplitude = 4.0;
+
+            if (feedKey.includes('umid')) { baseVal = 65.0; amplitude = 12.0; }
+            else if (feedKey.includes('pres')) { baseVal = 1013.0; amplitude = 5.0; }
+            else if (feedKey.includes('lux')) { baseVal = 20000; amplitude = 18000; }
+
+            for (let i = points; i >= 0; i--) {
+                const date = new Date(now);
+                if (period === '24h') {
+                    date.setHours(now.getHours() - i);
+                } else {
+                    date.setDate(now.getDate() - i);
+                }
+
+                // Sinusoidal curve for realistic day/night variation
+                const cycle = (i / points) * Math.PI * 2;
+                const value = Math.max(0, baseVal + Math.sin(cycle) * amplitude + (Math.random() * 1.5 - 0.75));
+
+                history.push({ time: date, value });
+            }
+
+            return history;
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('historyChart').getContext('2d');
+            
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#94a3b8',
+                                font: { family: 'Inter', size: 12 },
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#cbd5e1',
+                            borderColor: '#334155',
+                            borderWidth: 1,
+                            padding: 12,
+                            boxPadding: 6,
+                            usePointStyle: true
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#64748b', font: { family: 'Inter', size: 11 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#64748b', font: { family: 'Inter', size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function renderHistoricalChart() {
+            if (!chartInstance) return;
+
+            let datasets = [];
+            let labels = [];
+            let primaryValues = [];
+
+            if (currentMetric === 'temp') {
+                const dhtData = await fetchFeedHistory(appConfig.feeds.dhtTemp);
+                const bmpData = await fetchFeedHistory(appConfig.feeds.bmpTemp);
+
+                labels = dhtData.map(d => formatChartDate(d.time, currentPeriod));
+                primaryValues = dhtData.map(d => d.value);
+
+                datasets = [
+                    {
+                        label: 'Temp. DHT22 (°C)',
+                        data: primaryValues,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 2,
+                        pointRadius: currentPeriod === '24h' ? 3 : 2
+                    },
+                    {
+                        label: 'Temp. BMP280 (°C)',
+                        data: bmpData.map(d => d.value),
+                        borderColor: '#f97316',
+                        backgroundColor: 'transparent',
+                        borderDash: [4, 4],
+                        tension: 0.35,
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }
+                ];
+            } else if (currentMetric === 'umid') {
+                const umidData = await fetchFeedHistory(appConfig.feeds.dhtUmid);
+                labels = umidData.map(d => formatChartDate(d.time, currentPeriod));
+                primaryValues = umidData.map(d => d.value);
+
+                datasets = [{
+                    label: 'Umidade do Ar (%)',
+                    data: primaryValues,
+                    borderColor: '#06b6d4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+                    fill: true,
+                    tension: 0.35,
+                    borderWidth: 2.5,
+                    pointRadius: currentPeriod === '24h' ? 3 : 2
+                }];
+            } else if (currentMetric === 'pres') {
+                const presData = await fetchFeedHistory(appConfig.feeds.bmpPres);
+                labels = presData.map(d => formatChartDate(d.time, currentPeriod));
+                primaryValues = presData.map(d => d.value);
+
+                datasets = [{
+                    label: 'Pressão Atmosférica (hPa)',
+                    data: primaryValues,
+                    borderColor: '#a855f7',
+                    backgroundColor: 'rgba(168, 85, 247, 0.12)',
+                    fill: true,
+                    tension: 0.35,
+                    borderWidth: 2.5,
+                    pointRadius: currentPeriod === '24h' ? 3 : 2
+                }];
+            } else if (currentMetric === 'lux') {
+                const luxData = await fetchFeedHistory(appConfig.feeds.lux);
+                labels = luxData.map(d => formatChartDate(d.time, currentPeriod));
+                primaryValues = luxData.map(d => d.value);
+
+                datasets = [{
+                    label: 'Luminosidade (Lux)',
+                    data: primaryValues,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                    fill: true,
+                    tension: 0.35,
+                    borderWidth: 2.5,
+                    pointRadius: currentPeriod === '24h' ? 3 : 2
+                }];
+            }
+
+            chartInstance.data.labels = labels;
+            chartInstance.data.datasets = datasets;
+            chartInstance.update('active');
+
+            // Calculate summary statistics
+            calculateSummaryStats(primaryValues);
+        }
+
+        function calculateSummaryStats(vals) {
+            if (!vals || vals.length === 0) {
+                document.getElementById('statAvg').innerText = '--';
+                document.getElementById('statMin').innerText = '--';
+                document.getElementById('statMax').innerText = '--';
+                document.getElementById('statCount').innerText = '0';
+                return;
+            }
+
+            const sum = vals.reduce((a, b) => a + b, 0);
+            const avg = sum / vals.length;
+            const min = Math.min(...vals);
+            const max = Math.max(...vals);
+
+            const unit = currentMetric === 'temp' ? '°C' : currentMetric === 'umid' ? '%' : currentMetric === 'pres' ? 'hPa' : 'Lux';
+
+            document.getElementById('statAvg').innerText = `${avg.toFixed(1)} ${unit}`;
+            document.getElementById('statMin').innerText = `${min.toFixed(1)} ${unit}`;
+            document.getElementById('statMax').innerText = `${max.toFixed(1)} ${unit}`;
+            document.getElementById('statCount').innerText = `${vals.length} leituras`;
+        }
+
+        function formatChartDate(dateObj, period) {
+            if (period === '24h') {
+                return dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+            return dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        }
+
+        function setChartPeriod(period) {
+            currentPeriod = period;
+            
+            const btn24 = document.getElementById('btnPeriod24h');
+            const btn30 = document.getElementById('btnPeriod30d');
+
+            if (period === '24h') {
+                btn24.className = "px-3 py-1.5 rounded-lg font-semibold transition-all bg-emerald-600 text-white shadow-sm";
+                btn30.className = "px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all";
+            } else {
+                btn30.className = "px-3 py-1.5 rounded-lg font-semibold transition-all bg-emerald-600 text-white shadow-sm";
+                btn24.className = "px-3 py-1.5 rounded-lg font-semibold text-slate-400 hover:text-white transition-all";
+            }
+
+            renderHistoricalChart();
+        }
+
+        function setChartMetric(metric) {
+            currentMetric = metric;
+
+            const btnMap = {
+                temp: document.getElementById('btnMetricTemp'),
+                umid: document.getElementById('btnMetricUmid'),
+                pres: document.getElementById('btnMetricPres'),
+                lux: document.getElementById('btnMetricLux')
+            };
+
+            Object.entries(btnMap).forEach(([k, btn]) => {
+                if (k === metric) {
+                    btn.className = "px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-800 text-emerald-400 border border-slate-700/60 whitespace-nowrap";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-white whitespace-nowrap";
+                }
+            });
+
+            renderHistoricalChart();
+        }
+
+        function finishFetchUI(isOk, text) {
+            const refreshIcon = document.getElementById('refreshIcon');
+            setTimeout(() => refreshIcon.classList.remove('fa-spin'), 500);
+
+            const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('headerLastUpdated').innerText = `Atualizado às ${nowStr}`;
+        }
+
+        function updateStatusBadge(isOnline, text) {
+            const badge = document.getElementById('statusBadge');
+            const statusText = document.getElementById('statusText');
+
+            if (isOnline) {
+                badge.className = "flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-950/70 border border-emerald-800/60 text-xs font-medium text-emerald-300";
+                statusText.innerText = text || "Sincronizado";
+            } else {
+                badge.className = "flex items-center space-x-2 px-3 py-1 rounded-full bg-amber-950/70 border border-amber-800/60 text-xs font-medium text-amber-300";
+                statusText.innerText = text || "Modo Demo";
+            }
+        }
+
+        function showDemoBanner(show) {
+            const banner = document.getElementById('demoBanner');
+            if (show) banner.classList.remove('hidden');
+            else banner.classList.add('hidden');
+        }
+
+        function openSettingsModal() {
+            applyConfigToInputs();
+            document.getElementById('settingsModal').classList.remove('hidden');
+            document.getElementById('settingsModal').classList.add('flex');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+            document.getElementById('settingsModal').classList.remove('flex');
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            appConfig.username = document.getElementById('cfgUsername').value.trim();
+            appConfig.aioKey = document.getElementById('cfgAioKey').value.trim();
+            appConfig.photoUrl = document.getElementById('cfgPhotoUrl').value.trim();
+            appConfig.demoMode = document.getElementById('cfgDemoMode').checked;
+
+            appConfig.feeds.dhtTemp = document.getElementById('keyDhtTemp').value.trim();
+            appConfig.feeds.dhtUmid = document.getElementById('keyDhtUmid').value.trim();
+            appConfig.feeds.bmpTemp = document.getElementById('keyBmpTemp').value.trim();
+            appConfig.feeds.bmpPres = document.getElementById('keyBmpPres').value.trim();
+            appConfig.feeds.lux = document.getElementById('keyLux').value.trim();
+
+            document.getElementById('greenhouseImage').src = appConfig.photoUrl;
+
+            saveConfigToStorage();
+            closeSettingsModal();
+            fetchAllData();
+        }
+
+        function openPhotoModal() {
+            document.getElementById('photoUrlInput').value = appConfig.photoUrl;
+            document.getElementById('photoModal').classList.remove('hidden');
+            document.getElementById('photoModal').classList.add('flex');
+        }
+
+        function closePhotoModal() {
+            document.getElementById('photoModal').classList.add('hidden');
+            document.getElementById('photoModal').classList.remove('flex');
+        }
+
+        function savePhotoURL() {
+            const val = document.getElementById('photoUrlInput').value.trim();
+            if (val) {
+                appConfig.photoUrl = val;
+                document.getElementById('greenhouseImage').src = val;
+                saveConfigToStorage();
+            }
+            closePhotoModal();
+        }
+    </script>
+</body>
+</html>
