@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel da Estufa Agrícola - Monitoramento de Telemetria</title>
-    
+    <title>Painel da Estufa Agrícola</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -13,1165 +12,1086 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
+                        emerald: {
                             500: '#10b981',
                             600: '#059669',
                             700: '#047857',
-                            900: '#064e3b',
                         },
-                        darkbg: '#090d16',
-                        cardbg: '#131b2e',
-                        borderdark: '#202b42'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        slate: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
                     }
                 }
             }
         }
     </script>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome Icons -->
+    <!-- FontAwesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #090d16;
-            color: #f1f5f9;
-        }
-
-        /* Glassmorphism effects */
-        .glass-panel {
-            background: rgba(19, 27, 46, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-        }
-
-        /* Custom Pill Buttons bar matching user reference image */
-        .pill-container {
-            background-color: #0d1322;
-            border: 1px solid #1e293b;
-            padding: 4px;
-            border-radius: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .pill-btn {
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            color: #94a3b8;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            user-select: none;
-            border: 1px solid transparent;
-        }
-
-        .pill-btn:hover {
+            background-color: #0f172a;
             color: #f8fafc;
-            background-color: rgba(255, 255, 255, 0.04);
         }
 
-        /* Active Period Pill (Solid Emerald) */
-        .pill-btn-period-active {
-            background-color: #10b981 !important;
-            color: #ffffff !important;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
-
-        /* Active Metric Pill (Dark inner card with glowing emerald border & text) */
-        .pill-btn-metric-active {
-            background-color: #1a253a !important;
-            color: #10b981 !important;
-            border-color: rgba(16, 185, 129, 0.4) !important;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
-        }
-
-        /* Custom Scrollbar */
+        /* Custom Scrollbars */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #090d16;
+            background: #0f172a;
         }
         ::-webkit-scrollbar-thumb {
-            background: #1e293b;
+            background: #334155;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #334155;
+            background: #475569;
         }
 
-        /* Pulse animation for live dot */
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.15); opacity: 0.4; }
-            100% { transform: scale(0.95); opacity: 0.8; }
+        /* Modal backdrop blur */
+        .modal-backdrop {
+            background-color: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(6px);
         }
-        .pulse-live {
-            animation: pulse-ring 2s infinite ease-in-out;
+
+        /* Subtle pulse glow for live indicator */
+        .pulse-emerald {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between antialiased">
+<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between">
 
-    <div id="app" class="flex-1 flex flex-col">
-        <!-- HEADER -->
-        <header class="sticky top-0 z-30 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3.5 shadow-xl">
-            <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                <!-- Branding -->
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-900/40">
-                        <i class="fa-solid font-bold fa-leaf text-xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                            Estufa Agrícola
-                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">v2.4 IoT</span>
-                        </h1>
-                        <p class="text-xs text-slate-400">Painel de Telemetria e Monitoramento em Tempo Real</p>
-                    </div>
+    <!-- TOP HEADER -->
+    <header class="border-b border-slate-800 bg-slate-950/80 sticky top-0 z-30 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-emerald-600/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+                    <i class="fa-solid me-0 fa-seedling text-xl"></i>
                 </div>
-
-                <!-- Status & Quick Actions -->
-                <div class="flex items-center gap-3">
-                    <!-- Status Badge -->
-                    <div id="status-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-medium">
-                        <span class="relative flex h-2.5 w-2.5">
-                            <span class="pulse-live absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                        Painel da Estufa Agrícola
+                        <span id="liveStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5"></span> Configurar API
                         </span>
-                        <span id="status-text">Conectado (Modo Demo)</span>
-                    </div>
-
-                    <!-- Refresh Button -->
-                    <button id="btn-refresh" title="Atualizar Dados Agora" class="p-2.5 rounded-lg bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700 transition border border-slate-700/60">
-                        <i class="fa-solid fa-rotate-right text-sm"></i>
-                    </button>
-
-                    <!-- Settings Button -->
-                    <button id="btn-settings" class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition border border-slate-700/80 shadow-sm">
-                        <i class="fa-solid fa-gear text-emerald-400"></i>
-                        <span>Configurações</span>
-                    </button>
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Monitoramento em Tempo Real & Galeria Fotográfica</p>
                 </div>
             </div>
-        </header>
 
-        <!-- MAIN CONTAINER -->
-        <main class="max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-8 flex-1">
-            
-            <!-- SECTION 1: TOP SENSORS (TELEMETRY CARDS) -->
-            <section class="space-y-3">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-sm font-semibold text-slate-400 tracking-wider uppercase flex items-center gap-2">
-                        <i class="fa-solid fa-microchip text-emerald-400"></i> Sensores em Tempo Real
+            <!-- Action Controls -->
+            <div class="flex items-center space-x-3">
+                <button id="btnRefresh" onclick="refreshAllData()" class="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-lg text-sm font-medium transition flex items-center gap-2 px-3">
+                    <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
+                    <span class="hidden sm:inline">Atualizar</span>
+                </button>
+                <button onclick="openSettingsModal()" class="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-lg text-sm font-medium transition flex items-center gap-2 px-3">
+                    <i class="fa-solid fa-gear text-slate-300"></i>
+                    <span class="hidden sm:inline">Configurações</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT WRAPPER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 flex-grow w-full">
+
+        <!-- CONFIG WARNING BANNER (Hidden when configured) -->
+        <div id="configWarningBanner" class="hidden bg-amber-950/40 border border-amber-500/40 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-amber-200">Credenciais do Adafruit IO não configuradas</h3>
+                    <p class="text-xs text-amber-300/80">Insira seu Usuário e AIO Key para carregar os sensores em tempo real.</p>
+                </div>
+            </div>
+            <button onclick="openSettingsModal()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold transition whitespace-nowrap">
+                Configurar Agora
+            </button>
+        </div>
+
+        <!-- SENSOR TELEMETRY CARDS (TOP SECTION) -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- DHT22 Temperature -->
+            <div class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-slate-600 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-3">
+                    <span class="text-xs font-semibold tracking-wider uppercase text-slate-400">Temperatura (DHT22)</span>
+                    <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                        <i class="fa-solid fa-temperature-half"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="valTemp" class="text-3xl font-extrabold text-white">--</span>
+                    <span class="text-sm font-medium text-slate-400">°C</span>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-xs border-t border-slate-700/50 pt-2.5">
+                    <span id="statusTemp" class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300">Aguardando</span>
+                    <span id="timeTemp" class="text-slate-500 text-[11px]">--:--</span>
+                </div>
+            </div>
+
+            <!-- DHT22 Humidity -->
+            <div class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-slate-600 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-3">
+                    <span class="text-xs font-semibold tracking-wider uppercase text-slate-400">Umidade (DHT22)</span>
+                    <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center">
+                        <i class="fa-solid fa-droplet"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="valUmid" class="text-3xl font-extrabold text-white">--</span>
+                    <span class="text-sm font-medium text-slate-400">%</span>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-xs border-t border-slate-700/50 pt-2.5">
+                    <span id="statusUmid" class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300">Aguardando</span>
+                    <span id="timeUmid" class="text-slate-500 text-[11px]">--:--</span>
+                </div>
+            </div>
+
+            <!-- BMP180 Pressure -->
+            <div class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-slate-600 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-3">
+                    <span class="text-xs font-semibold tracking-wider uppercase text-slate-400">Pressão Atmosférica</span>
+                    <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                        <i class="fa-solid fa-gauge-high"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="valPress" class="text-3xl font-extrabold text-white">--</span>
+                    <span class="text-sm font-medium text-slate-400">hPa</span>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-xs border-t border-slate-700/50 pt-2.5">
+                    <span id="statusPress" class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300">BMP180</span>
+                    <span id="timePress" class="text-slate-500 text-[11px]">--:--</span>
+                </div>
+            </div>
+
+            <!-- Luminosity Lux -->
+            <div class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-slate-600 transition">
+                <div class="flex items-center justify-between text-slate-400 mb-3">
+                    <span class="text-xs font-semibold tracking-wider uppercase text-slate-400">Luminosidade</span>
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                        <i class="fa-solid fa-sun"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="valLux" class="text-3xl font-extrabold text-white">--</span>
+                    <span class="text-sm font-medium text-slate-400">Lux</span>
+                </div>
+                <div class="mt-3 flex items-center justify-between text-xs border-t border-slate-700/50 pt-2.5">
+                    <span id="statusLux" class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300">Aguardando</span>
+                    <span id="timeLux" class="text-slate-500 text-[11px]">--:--</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- HISTORICAL CHART SECTION -->
+        <section class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+            <!-- Control Bar with Dark Pill Containers -->
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-700/60 pb-5">
+                <div>
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-emerald-400"></i> Histórico de Telemetria
                     </h2>
-                    <span id="last-update-label" class="text-xs text-slate-500">Última leitura: Hoje às 11:50</span>
+                    <p class="text-xs text-slate-400 mt-0.5">Gráficos dinâmicos com agrupamento de tempo e auto-ajuste</p>
                 </div>
 
-                <!-- 4 Realtime Cards Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    
-                    <!-- Card 1: Temperatura (DHT22) -->
-                    <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-emerald-500/40 transition">
-                        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition"></div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-medium text-slate-400">Temperatura (DHT22)</span>
-                            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                                <i class="fa-solid fa-temperature-half"></i>
-                            </div>
-                        </div>
-                        <div class="flex items-baseline justify-between">
-                            <div class="text-3xl font-bold text-white tracking-tight" id="val-temp">24.5 <span class="text-lg font-normal text-slate-400">°C</span></div>
-                            <span id="status-temp" class="text-xs font-medium px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Ideal</span>
-                        </div>
-                        <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                            <span>Faixa: 20°C - 28°C</span>
-                            <span class="text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-arrow-trend-up"></i> +0.4°C</span>
-                        </div>
-                    </div>
-
-                    <!-- Card 2: Umidade (DHT22) -->
-                    <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-cyan-500/40 transition">
-                        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-cyan-500/5 rounded-full blur-xl group-hover:bg-cyan-500/10 transition"></div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-medium text-slate-400">Umidade Relativa</span>
-                            <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
-                                <i class="fa-solid fa-droplet"></i>
-                            </div>
-                        </div>
-                        <div class="flex items-baseline justify-between">
-                            <div class="text-3xl font-bold text-white tracking-tight" id="val-humidity">68.2 <span class="text-lg font-normal text-slate-400">%</span></div>
-                            <span id="status-humidity" class="text-xs font-medium px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300">Normal</span>
-                        </div>
-                        <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                            <span>Alvo: 60% - 80%</span>
-                            <span class="text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-check"></i> Estável</span>
-                        </div>
-                    </div>
-
-                    <!-- Card 3: Pressão Atmosférica (BMP) -->
-                    <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-indigo-500/40 transition">
-                        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl group-hover:bg-indigo-500/10 transition"></div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-medium text-slate-400">Pressão (BMP)</span>
-                            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-                                <i class="fa-solid fa-gauge-high"></i>
-                            </div>
-                        </div>
-                        <div class="flex items-baseline justify-between">
-                            <div class="text-3xl font-bold text-white tracking-tight" id="val-pressure">1013.2 <span class="text-lg font-normal text-slate-400">hPa</span></div>
-                            <span id="status-pressure" class="text-xs font-medium px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300">Bom</span>
-                        </div>
-                        <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                            <span>Nível do Mar</span>
-                            <span class="text-slate-400">~1 atm</span>
-                        </div>
-                    </div>
-
-                    <!-- Card 4: Luminosidade (BH1750) -->
-                    <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-amber-500/40 transition">
-                        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-500/5 rounded-full blur-xl group-hover:bg-amber-500/10 transition"></div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-medium text-slate-400">Luminosidade (Lux)</span>
-                            <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
-                                <i class="fa-solid fa-sun"></i>
-                            </div>
-                        </div>
-                        <div class="flex items-baseline justify-between">
-                            <div class="text-3xl font-bold text-white tracking-tight" id="val-lux">18,450 <span class="text-lg font-normal text-slate-400">Lux</span></div>
-                            <span id="status-lux" class="text-xs font-medium px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">Sol Pleno</span>
-                        </div>
-                        <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                            <span>Fotossíntese Ativa</span>
-                            <span class="text-amber-400 flex items-center gap-1"><i class="fa-solid fa-bolt"></i> Elevado</span>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- SECTION 2: HISTORICAL GRAPH WITH PILL BUTTON CONTROLS -->
-            <section class="glass-panel p-5 lg:p-6 rounded-2xl space-y-6">
-                <!-- Controls Header matching exact user reference image styling -->
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-                    <div>
-                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-chart-line text-emerald-400"></i> Histórico de Telemetria
-                        </h2>
-                        <p class="text-xs text-slate-400 mt-0.5">Acompanhamento temporal dos parâmetros microclimáticos</p>
-                    </div>
-
-                    <!-- Exact Controls Container as requested by user -->
-                    <div class="flex flex-wrap items-center gap-3">
-                        
-                        <!-- Group 1: Period (24 Horas / 30 Dias) without point numbers -->
-                        <div class="pill-container">
-                            <button id="btn-period-24h" class="pill-btn pill-btn-period-active" onclick="switchPeriod('24h')">
-                                24 Horas
-                            </button>
-                            <button id="btn-period-30d" class="pill-btn" onclick="switchPeriod('30d')">
-                                30 Dias
-                            </button>
-                        </div>
-
-                        <!-- Group 2: Metrics Selector Buttons -->
-                        <div class="pill-container">
-                            <button id="btn-metric-temp" class="pill-btn pill-btn-metric-active" onclick="switchMetric('temp')">
-                                <i class="fa-solid fa-temperature-half"></i> Temp.
-                            </button>
-                            <button id="btn-metric-humidity" class="pill-btn" onclick="switchMetric('humidity')">
-                                <i class="fa-solid fa-droplet"></i> Umidade
-                            </button>
-                            <button id="btn-metric-pressure" class="pill-btn" onclick="switchMetric('pressure')">
-                                <i class="fa-solid fa-gauge-high"></i> Pressão
-                            </button>
-                            <button id="btn-metric-lux" class="pill-btn" onclick="switchMetric('lux')">
-                                <i class="fa-solid fa-sun"></i> Lux
-                            </button>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- Canvas Chart Area -->
-                <div class="relative w-full h-[320px] sm:h-[380px]">
-                    <canvas id="telemetryChart"></canvas>
-                </div>
-
-                <!-- Quick Stats Summary Bar for the selected metric -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-center">
-                    <div class="bg-slate-900/60 border border-slate-800 p-2.5 rounded-xl">
-                        <span class="text-[11px] text-slate-400 block">Média no Período</span>
-                        <span id="stat-avg" class="text-sm font-semibold text-slate-200">23.8 °C</span>
-                    </div>
-                    <div class="bg-slate-900/60 border border-slate-800 p-2.5 rounded-xl">
-                        <span class="text-[11px] text-slate-400 block">Mínima Registrada</span>
-                        <span id="stat-min" class="text-sm font-semibold text-emerald-400">19.2 °C</span>
-                    </div>
-                    <div class="bg-slate-900/60 border border-slate-800 p-2.5 rounded-xl">
-                        <span class="text-[11px] text-slate-400 block">Máxima Registrada</span>
-                        <span id="stat-max" class="text-sm font-semibold text-amber-400">28.9 °C</span>
-                    </div>
-                    <div class="bg-slate-900/60 border border-slate-800 p-2.5 rounded-xl">
-                        <span class="text-[11px] text-slate-400 block">Variação Acumulada</span>
-                        <span id="stat-var" class="text-sm font-semibold text-cyan-400">± 3.2°C</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 3: GREENHOUSE PHOTOS GALLERY (AT THE BOTTOM) -->
-            <section class="glass-panel p-5 lg:p-6 rounded-2xl space-y-5">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-                    <div>
-                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-camera-retro text-emerald-400"></i> Registro Fotográfico da Estufa
-                        </h2>
-                        <p class="text-xs text-slate-400 mt-0.5">Capturas automáticas sincronizadas diretamente do repositório GitHub</p>
-                    </div>
-
-                    <!-- Gallery Filter Controls -->
-                    <div class="flex items-center gap-2">
-                        <!-- Date Filter Input -->
-                        <div class="relative">
-                            <input type="date" id="gallery-date-filter" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-emerald-500">
-                        </div>
-                        <button id="btn-clear-date" onclick="clearDateFilter()" title="Limpar filtro de data" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-400 hover:text-white transition border border-slate-700">
-                            <i class="fa-solid fa-xmark"></i>
+                <!-- Pill Buttons Bar -->
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <!-- Metric Selection Pills -->
+                    <div class="bg-slate-900/90 p-1 rounded-full border border-slate-700/80 shadow-inner flex items-center">
+                        <button onclick="setMetric('temp')" id="pill-metric-temp" class="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full transition cursor-pointer">
+                            Temp.
                         </button>
-                        <button id="btn-sync-photos" onclick="fetchGitHubPhotos()" class="px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600/30 text-xs font-semibold transition border border-emerald-500/30 flex items-center gap-1.5">
-                            <i class="fa-solid fa-rotate"></i> Sync
+                        <button onclick="setMetric('umid')" id="pill-metric-umid" class="px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer">
+                            Umidade
+                        </button>
+                        <button onclick="setMetric('press')" id="pill-metric-press" class="px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer">
+                            Pressão
+                        </button>
+                        <button onclick="setMetric('lux')" id="pill-metric-lux" class="px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer">
+                            Lux
                         </button>
                     </div>
-                </div>
 
-                <!-- Photos Grid Container -->
-                <div id="photos-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <!-- Photo cards injected dynamically by JS -->
-                </div>
-
-                <!-- Gallery Empty / Loading State -->
-                <div id="gallery-loading" class="hidden py-12 text-center text-slate-400 space-y-3">
-                    <i class="fa-solid fa-circle-notch fa-spin text-2xl text-emerald-400"></i>
-                    <p class="text-sm">Buscando imagens no GitHub...</p>
-                </div>
-            </section>
-
-        </main>
-
-        <!-- FOOTER -->
-        <footer class="mt-12 border-t border-slate-800/80 bg-slate-950/60 py-6 text-center text-xs text-slate-500">
-            <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-                <p>Estufa Agrícola IoT &copy; 2026 - Conectando Adafruit IO + GitHub REST API</p>
-                <div class="flex items-center gap-4">
-                    <span class="text-emerald-500/80"><i class="fa-solid fa-circle text-[8px]"></i> Sensores OK</span>
-                    <span class="text-emerald-500/80"><i class="fa-solid fa-circle text-[8px]"></i> Câmera OK</span>
+                    <!-- Time Range Selection Pills -->
+                    <div class="bg-slate-900/90 p-1 rounded-full border border-slate-700/80 shadow-inner flex items-center">
+                        <button onclick="setTimeframe('24h')" id="pill-time-24h" class="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full transition cursor-pointer">
+                            24 Horas
+                        </button>
+                        <button onclick="setTimeframe('30d')" id="pill-time-30d" class="px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer">
+                            30 Dias
+                        </button>
+                    </div>
                 </div>
             </div>
-        </footer>
-    </div>
 
-    <!-- MODAL 1: SETTINGS DIALOG (⚙️) -->
-    <div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm hidden">
-        <div class="glass-panel w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            
-            <!-- Modal Header -->
-            <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+            <!-- Chart Canvas Container -->
+            <div class="relative w-full h-72 sm:h-80 md:h-96">
+                <canvas id="telemetryChart"></canvas>
+                <div id="chartLoadingOverlay" class="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center rounded-xl transition-opacity duration-300 hidden">
+                    <div class="flex items-center space-x-2 text-emerald-400 text-sm font-medium">
+                        <i class="fa-solid fa-circle-notch fa-spin text-lg"></i>
+                        <span>Carregando dados...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Statistics Bar (Calculated strictly on available data) -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4 border-t border-slate-700/50 text-center">
+                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/40">
+                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Média</span>
+                    <span id="statAvg" class="text-sm font-bold text-slate-200">--</span>
+                </div>
+                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/40">
+                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Mínima</span>
+                    <span id="statMin" class="text-sm font-bold text-slate-200">--</span>
+                </div>
+                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/40">
+                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Máxima</span>
+                    <span id="statMax" class="text-sm font-bold text-slate-200">--</span>
+                </div>
+                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/40">
+                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Amostras</span>
+                    <span id="statCount" class="text-sm font-bold text-slate-200">--</span>
+                </div>
+                <div class="col-span-2 sm:col-span-1 bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/40">
+                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Intervalo Disponível</span>
+                    <span id="statSpan" class="text-xs font-semibold text-emerald-400 truncate block">--</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- GITHUB PHOTO GALLERY SECTION (BOTTOM) -->
+        <section class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+            <!-- Gallery Header & Date Filter Controls -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-700/60 pb-5">
+                <div>
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-camera-retro text-emerald-400"></i> Galeria Visual da Estufa
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Fotos capturadas automaticamente armazenadas no repositório GitHub</p>
+                </div>
+
+                <div class="flex items-center space-x-3 w-full sm:w-auto">
+                    <!-- Date Picker Filter -->
+                    <div class="relative w-full sm:w-auto">
+                        <input type="date" id="galleryDateFilter" onchange="filterGalleryByDate()" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none w-full">
+                    </div>
+                    <button onclick="clearGalleryDateFilter()" class="p-2 text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-700 rounded-lg transition whitespace-nowrap" title="Limpar Filtro">
+                        <i class="fa-solid fa-filter-circle-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Photo Display Container -->
+            <div class="relative bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden min-h-[300px] sm:min-h-[420px] flex items-center justify-center group">
+                <!-- Gallery Loader -->
+                <div id="galleryLoader" class="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex flex-col items-center justify-center space-y-3 z-10">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-400"></i>
+                    <span class="text-xs text-slate-400">Buscando fotos do repositório GitHub...</span>
+                </div>
+
+                <!-- Gallery Empty State -->
+                <div id="galleryEmptyState" class="hidden flex flex-col items-center justify-center p-8 text-center space-y-3">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center text-xl">
+                        <i class="fa-regular fa-image"></i>
+                    </div>
+                    <p class="text-sm font-medium text-slate-300">Nenhuma foto encontrada</p>
+                    <p class="text-xs text-slate-500 max-w-sm">Verifique se as imagens estão salvas na pasta <code class="bg-slate-900 px-1.5 py-0.5 rounded text-emerald-400">/fotos</code> do seu repositório GitHub público.</p>
+                </div>
+
+                <!-- Main Active Image (Object contain inside framed dark container) -->
+                <img id="mainGalleryImg" src="" alt="Foto da Estufa" class="hidden w-full h-[320px] sm:h-[460px] object-contain transition duration-300">
+
+                <!-- Navigation Overlay Arrows -->
+                <button id="btnPrevPhoto" onclick="prevPhoto()" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/80 hover:bg-emerald-600 text-white flex items-center justify-center border border-slate-700 transition opacity-80 hover:opacity-100 cursor-pointer shadow-lg">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button id="btnNextPhoto" onclick="nextPhoto()" class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/80 hover:bg-emerald-600 text-white flex items-center justify-center border border-slate-700 transition opacity-80 hover:opacity-100 cursor-pointer shadow-lg">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+
+                <!-- Fullscreen Zoom Button -->
+                <button onclick="openLightbox()" class="absolute top-3 right-3 p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 transition text-xs flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-expand"></i>
+                    <span class="hidden sm:inline">Ampliar</span>
+                </button>
+
+                <!-- Photo Counter & Info Badge -->
+                <div id="photoInfoBadge" class="absolute bottom-3 left-3 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 flex items-center gap-3">
+                    <span id="photoIndexCounter">0 / 0</span>
+                    <span id="photoFilename" class="text-emerald-400 font-mono text-[11px]">--</span>
+                </div>
+            </div>
+
+            <!-- Thumbnail Carousel Bar -->
+            <div id="thumbnailContainer" class="flex items-center space-x-3 overflow-x-auto pb-2 pt-1 px-1 scroll-smooth">
+                <!-- Dynamic thumbnails will be injected here -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-800 bg-slate-950 py-4 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>Painel da Estufa Agrícola &copy; Monitoramento IOT</p>
+            <p class="text-[11px] text-slate-600">Conectado via Adafruit IO REST API & GitHub Content API</p>
+        </div>
+    </footer>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5 relative">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
                 <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-gear text-emerald-400"></i> Configurações de Conexão
+                    <i class="fa-solid fa-sliders text-emerald-400"></i> Configurações de Conectividade
                 </h3>
-                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white transition">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
-            <!-- Modal Body Form -->
-            <div class="p-6 overflow-y-auto space-y-6 text-xs">
-                
-                <!-- Toggle Mode -->
-                <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+            <form id="settingsForm" onsubmit="saveSettings(event)" class="space-y-4">
+                <!-- Adafruit IO Section -->
+                <div class="space-y-3">
+                    <h4 class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Adafruit IO (Sensores)</h4>
+                    
                     <div>
-                        <span class="font-bold text-slate-200 block text-sm">Modo Demonstrativo (Demo)</span>
-                        <span class="text-slate-400">Utilizar dados simulados realistas sem precisar de API keys</span>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Usuário Adafruit IO</label>
+                        <input type="text" id="inputAioUsername" required placeholder="ex: seu_usuario" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="cfg-demo-mode" class="sr-only peer" onchange="toggleDemoModeUI()">
-                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                    </label>
-                </div>
 
-                <!-- Adafruit Section -->
-                <div id="adafruit-form-section" class="space-y-3">
-                    <h4 class="font-semibold text-emerald-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                        <i class="fa-solid fa-wifi"></i> Adafruit IO (REST API)
-                    </h4>
-                    <div class="grid grid-cols-1 gap-3">
-                        <div>
-                            <label class="block text-slate-300 mb-1">Usuário Adafruit IO</label>
-                            <input type="text" id="cfg-aio-user" placeholder="Ex: seu_usuario_adafruit" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">AIO Key (Chave API Secreta)</label>
+                        <div class="relative">
+                            <input type="password" id="inputAioKey" required placeholder="aio_..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none pr-10">
+                            <button type="button" onclick="toggleKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs">
+                                <i class="fa-regular fa-eye" id="eyeIcon"></i>
+                            </button>
                         </div>
-                        <div>
-                            <label class="block text-slate-300 mb-1">Chave Ativa (AIO Key)</label>
-                            <input type="password" id="cfg-aio-key" placeholder="aio_xxxxxxxxxxxxxxxxxxxxxxxx" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500">
-                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Sua chave é gravada estritamente no <code class="text-emerald-400">localStorage</code> do seu navegador.</p>
                     </div>
                 </div>
 
                 <!-- GitHub Section -->
-                <div id="github-form-section" class="space-y-3 pt-2 border-t border-slate-800">
-                    <h4 class="font-semibold text-emerald-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                        <i class="fa-brands fa-github"></i> GitHub (Galeria de Fotos)
-                    </h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-3 pt-2 border-t border-slate-700">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">GitHub (Galeria de Fotos)</h4>
+                        <button type="button" onclick="autoDetectGitHubRepo()" class="text-[11px] text-sky-400 hover:underline">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Detectar URL
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-slate-300 mb-1">Usuário GitHub</label>
-                            <input type="text" id="cfg-gh-user" placeholder="Ex: seu_usuario" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500">
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Usuário GitHub</label>
+                            <input type="text" id="inputGhUser" required placeholder="ex: usuario" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
                         </div>
+
                         <div>
-                            <label class="block text-slate-300 mb-1">Repositório</label>
-                            <input type="text" id="cfg-gh-repo" placeholder="Ex: estufa-fotos" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-slate-300 mb-1">Pasta das Fotos no Repositório</label>
-                            <input type="text" id="cfg-gh-path" placeholder="Ex: fotos ou imagens/estufa" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-emerald-500">
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Repositório</label>
+                            <input type="text" id="inputGhRepo" required placeholder="ex: estufa-agricola" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
                         </div>
                     </div>
                 </div>
 
-            </div>
-
-            <!-- Modal Footer -->
-            <div class="px-6 py-4 border-t border-slate-800 bg-slate-900/60 flex items-center justify-end gap-3">
-                <button onclick="closeSettingsModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition">
-                    Cancelar
-                </button>
-                <button onclick="saveSettings()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition shadow-lg shadow-emerald-900/40">
-                    Salvar e Recarregar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL 2: FULLSCREEN PHOTO LIGHTBOX -->
-    <div id="photo-lightbox" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md hidden">
-        <div class="relative w-full max-w-5xl h-[85vh] flex flex-col justify-between">
-            
-            <!-- Lightbox Top Control Bar -->
-            <div class="flex items-center justify-between text-white z-10 bg-slate-900/70 backdrop-blur px-4 py-2.5 rounded-xl border border-slate-800">
-                <div class="flex items-center gap-3">
-                    <span id="lb-filename" class="font-medium text-xs sm:text-sm text-slate-200">foto_estufa_2026.jpg</span>
-                    <span id="lb-date" class="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">28/09/2026 10:30</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <a id="lb-download" href="#" target="_blank" download class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs transition" title="Baixar imagem original">
-                        <i class="fa-solid fa-download"></i>
-                    </a>
-                    <button onclick="closeLightbox()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs transition">
-                        <i class="fa-solid fa-xmark text-lg"></i>
+                <!-- Form Buttons -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-700">
+                    <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition">
+                        Salvar Configurações
                     </button>
                 </div>
-            </div>
-
-            <!-- Image Viewport Container with strictly object-contain (NO CROPPING) -->
-            <div class="relative flex-1 flex items-center justify-center my-3 overflow-hidden rounded-2xl bg-black/40 border border-slate-800/80">
-                
-                <!-- Left Nav Arrow -->
-                <button onclick="prevPhoto()" class="absolute left-3 z-10 p-3 rounded-full bg-slate-900/80 hover:bg-emerald-600 text-white transition border border-slate-700 hover:border-emerald-400 shadow-xl">
-                    <i class="fa-solid fa-chevron-left text-lg"></i>
-                </button>
-
-                <!-- Full Photo Display Element -->
-                <img id="lb-image" src="" alt="Captura da Estufa" class="max-w-full max-h-full object-contain select-none transition-all duration-300">
-
-                <!-- Right Nav Arrow -->
-                <button onclick="nextPhoto()" class="absolute right-3 z-10 p-3 rounded-full bg-slate-900/80 hover:bg-emerald-600 text-white transition border border-slate-700 hover:border-emerald-400 shadow-xl">
-                    <i class="fa-solid fa-chevron-right text-lg"></i>
-                </button>
-            </div>
-
-            <!-- Lightbox Footer Info -->
-            <div class="text-center text-xs text-slate-400 bg-slate-900/70 px-4 py-2 rounded-xl border border-slate-800 flex items-center justify-between">
-                <span id="lb-index">Imagem 1 de 8</span>
-                <span class="text-emerald-400 font-mono"><i class="fa-solid fa-circle-check text-[10px]"></i> Alta Resolução (GitHub)</span>
-            </div>
+            </form>
         </div>
     </div>
 
-    <script>
-        // GLOBAL APP STATE
-        const APP_STATE = {
-            demoMode: true,
-            aioUser: '',
-            aioKey: '',
-            ghUser: '',
-            ghRepo: '',
-            ghPath: 'fotos',
-            
-            // Selected Chart Controls
-            selectedPeriod: '24h', // '24h' | '30d'
-            selectedMetric: 'temp', // 'temp' | 'humidity' | 'pressure' | 'lux'
-            
-            // Loaded Data Storage
-            telemetryData: {
-                '24h': { temp: [], humidity: [], pressure: [], lux: [], timestamps: [] },
-                '30d': { temp: [], humidity: [], pressure: [], lux: [], timestamps: [] }
-            },
-            
-            photos: [],
-            filteredPhotos: [],
-            currentPhotoIndex: 0,
-            chartInstance: null
-        };
+    <!-- LIGHTBOX MODAL -->
+    <div id="lightboxModal" class="fixed inset-0 z-50 bg-black/95 hidden flex flex-col items-center justify-between p-4">
+        <div class="w-full flex items-center justify-between text-white z-10 px-4 py-2">
+            <span id="lightboxTitle" class="text-xs font-mono text-emerald-400">--</span>
+            <button onclick="closeLightbox()" class="text-slate-400 hover:text-white p-2 text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
 
-        // FEEDS CONFIG (Adafruit IO)
-        const AIO_FEEDS = {
+        <div class="relative flex-grow w-full flex items-center justify-center overflow-hidden p-2">
+            <img id="lightboxImg" src="" alt="Zoom Foto" class="max-h-full max-w-full object-contain transition-transform duration-200">
+        </div>
+
+        <div class="flex items-center space-x-4 py-3 z-10">
+            <button onclick="zoomInLightbox()" class="p-2.5 rounded-full bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 text-xs">
+                <i class="fa-solid fa-magnifying-glass-plus"></i> Zoom +
+            </button>
+            <button onclick="resetLightboxZoom()" class="p-2.5 rounded-full bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 text-xs">
+                Resetar
+            </button>
+            <button onclick="zoomOutLightbox()" class="p-2.5 rounded-full bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 text-xs">
+                <i class="fa-solid fa-magnifying-glass-minus"></i> Zoom -
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Global Feed Mapping Keys
+        const FEED_KEYS = {
             temp: 'dht22.temperaturadht22',
-            humidity: 'dht22.umidadedht22',
-            pressure: 'bmp180.pressaobmp',
+            umid: 'dht22.umidadedht22',
+            press: 'bmp180.pressaobmp',
             lux: 'luminosidade.lux'
         };
 
-        // Metric Visual Configs
-        const METRIC_CONFIGS = {
-            temp: {
-                label: 'Temperatura (°C)',
-                unit: '°C',
-                color: '#10b981', // Emerald
-                bgGradient: ['rgba(16, 185, 129, 0.35)', 'rgba(16, 185, 129, 0.01)'],
-                idealMin: 20,
-                idealMax: 28
-            },
-            humidity: {
-                label: 'Umidade Relativa (%)',
-                unit: '%',
-                color: '#06b6d4', // Cyan
-                bgGradient: ['rgba(6, 182, 212, 0.35)', 'rgba(6, 182, 212, 0.01)'],
-                idealMin: 60,
-                idealMax: 80
-            },
-            pressure: {
-                label: 'Pressão Atmosférica (hPa)',
-                unit: 'hPa',
-                color: '#6366f1', // Indigo
-                bgGradient: ['rgba(99, 102, 241, 0.35)', 'rgba(99, 102, 241, 0.01)'],
-                idealMin: 1005,
-                idealMax: 1025
-            },
-            lux: {
-                label: 'Luminosidade (Lux)',
-                unit: 'Lux',
-                color: '#f59e0b', // Amber
-                bgGradient: ['rgba(245, 158, 11, 0.35)', 'rgba(245, 158, 11, 0.01)'],
-                idealMin: 5000,
-                idealMax: 40000
-            }
+        // App State
+        let config = {
+            aioUsername: '',
+            aioKey: '',
+            ghUser: '',
+            ghRepo: ''
         };
 
-        /* Load stored settings on init */
-        function loadSettings() {
-            const storedDemo = localStorage.getItem('estufa_demo_mode');
-            APP_STATE.demoMode = storedDemo !== null ? JSON.parse(storedDemo) : true;
-            APP_STATE.aioUser = localStorage.getItem('estufa_aio_user') || '';
-            APP_STATE.aioKey = localStorage.getItem('estufa_aio_key') || '';
-            APP_STATE.ghUser = localStorage.getItem('estufa_gh_user') || '';
-            APP_STATE.ghRepo = localStorage.getItem('estufa_gh_repo') || '';
-            APP_STATE.ghPath = localStorage.getItem('estufa_gh_path') || 'fotos';
+        let currentMetric = 'temp'; // 'temp', 'umid', 'press', 'lux'
+        let currentTimeframe = '24h'; // '24h', '30d'
+        let telemetryChart = null;
 
-            // Fill settings modal inputs
-            document.getElementById('cfg-demo-mode').checked = APP_STATE.demoMode;
-            document.getElementById('cfg-aio-user').value = APP_STATE.aioUser;
-            document.getElementById('cfg-aio-key').value = APP_STATE.aioKey;
-            document.getElementById('cfg-gh-user').value = APP_STATE.ghUser;
-            document.getElementById('cfg-gh-repo').value = APP_STATE.ghRepo;
-            document.getElementById('cfg-gh-path').value = APP_STATE.ghPath;
+        // Gallery State
+        let galleryPhotos = [];
+        let filteredPhotos = [];
+        let currentPhotoIndex = 0;
+        let lightboxZoomScale = 1;
 
-            toggleDemoModeUI();
+        window.addEventListener('DOMContentLoaded', () => {
+            loadConfigFromStorage();
+            initChart();
+            autoDetectGitHubRepo();
+            
+            if (config.aioUsername && config.aioKey) {
+                updateConnectionStatus('connected');
+                refreshAllData();
+            } else {
+                updateConnectionStatus('configured_needed');
+                document.getElementById('configWarningBanner').classList.remove('hidden');
+                // Open settings automatically on first load if missing
+                openSettingsModal();
+            }
+
+            if (config.ghUser && config.ghRepo) {
+                fetchGitHubPhotos();
+            }
+        });
+
+        // Load credentials from localStorage
+        function loadConfigFromStorage() {
+            config.aioUsername = localStorage.getItem('estufa_aio_user') || '';
+            config.aioKey = localStorage.getItem('estufa_aio_key') || '';
+            config.ghUser = localStorage.getItem('estufa_gh_user') || '';
+            config.ghRepo = localStorage.getItem('estufa_gh_repo') || '';
+
+            document.getElementById('inputAioUsername').value = config.aioUsername;
+            document.getElementById('inputAioKey').value = config.aioKey;
+            document.getElementById('inputGhUser').value = config.ghUser;
+            document.getElementById('inputGhRepo').value = config.ghRepo;
         }
 
-        function toggleDemoModeUI() {
-            const isDemo = document.getElementById('cfg-demo-mode').checked;
-            const aioSec = document.getElementById('adafruit-form-section');
-            const ghSec = document.getElementById('github-form-section');
-            
-            if (isDemo) {
-                aioSec.style.opacity = '0.5';
-                ghSec.style.opacity = '0.5';
+        function updateConnectionStatus(status) {
+            const badge = document.getElementById('liveStatusBadge');
+            const warningBanner = document.getElementById('configWarningBanner');
+
+            if (status === 'connected') {
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 pulse-emerald"></span> Conectado';
+                warningBanner.classList.add('hidden');
             } else {
-                aioSec.style.opacity = '1.0';
-                ghSec.style.opacity = '1.0';
+                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20';
+                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5"></span> Configuração Pendente';
             }
         }
 
         function openSettingsModal() {
-            document.getElementById('settings-modal').classList.remove('hidden');
+            document.getElementById('settingsModal').classList.remove('hidden');
         }
 
         function closeSettingsModal() {
-            document.getElementById('settings-modal').classList.add('hidden');
+            document.getElementById('settingsModal').classList.add('hidden');
         }
 
-        function saveSettings() {
-            const demoVal = document.getElementById('cfg-demo-mode').checked;
-            const aioUser = document.getElementById('cfg-aio-user').value.trim();
-            const aioKey = document.getElementById('cfg-aio-key').value.trim();
-            const ghUser = document.getElementById('cfg-gh-user').value.trim();
-            const ghRepo = document.getElementById('cfg-gh-repo').value.trim();
-            const ghPath = document.getElementById('cfg-gh-path').value.trim() || 'fotos';
+        function toggleKeyVisibility() {
+            const keyInput = document.getElementById('inputAioKey');
+            const eyeIcon = document.getElementById('eyeIcon');
+            if (keyInput.type === 'password') {
+                keyInput.type = 'text';
+                eyeIcon.className = 'fa-regular fa-eye-slash';
+            } else {
+                keyInput.type = 'password';
+                eyeIcon.className = 'fa-regular fa-eye';
+            }
+        }
 
-            localStorage.setItem('estufa_demo_mode', JSON.stringify(demoVal));
-            localStorage.setItem('estufa_aio_user', aioUser);
-            localStorage.setItem('estufa_aio_key', aioKey);
-            localStorage.setItem('estufa_gh_user', ghUser);
-            localStorage.setItem('estufa_gh_repo', ghRepo);
-            localStorage.setItem('estufa_gh_path', ghPath);
+        function autoDetectGitHubRepo() {
+            const hostname = window.location.hostname;
+            const pathname = window.location.pathname;
 
-            APP_STATE.demoMode = demoVal;
-            APP_STATE.aioUser = aioUser;
-            APP_STATE.aioKey = aioKey;
-            APP_STATE.ghUser = ghUser;
-            APP_STATE.ghRepo = ghRepo;
-            APP_STATE.ghPath = ghPath;
+            if (hostname.includes('github.io')) {
+                const parts = hostname.split('.');
+                const user = parts[0];
+                const pathParts = pathname.split('/').filter(p => p.length > 0);
+                const repo = pathParts.length > 0 ? pathParts[0] : '';
+
+                if (user && !document.getElementById('inputGhUser').value) {
+                    document.getElementById('inputGhUser').value = user;
+                }
+                if (repo && !document.getElementById('inputGhRepo').value) {
+                    document.getElementById('inputGhRepo').value = repo;
+                }
+            }
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            config.aioUsername = document.getElementById('inputAioUsername').value.trim();
+            config.aioKey = document.getElementById('inputAioKey').value.trim();
+            config.ghUser = document.getElementById('inputGhUser').value.trim();
+            config.ghRepo = document.getElementById('inputGhRepo').value.trim();
+
+            localStorage.setItem('estufa_aio_user', config.aioUsername);
+            localStorage.setItem('estufa_aio_key', config.aioKey);
+            localStorage.setItem('estufa_gh_user', config.ghUser);
+            localStorage.setItem('estufa_gh_repo', config.ghRepo);
 
             closeSettingsModal();
+            updateConnectionStatus('connected');
             refreshAllData();
+            fetchGitHubPhotos();
         }
 
-        function generateDemoTelemetry() {
-            const data24h = { temp: [], humidity: [], pressure: [], lux: [], timestamps: [] };
-            const data30d = { temp: [], humidity: [], pressure: [], lux: [], timestamps: [] };
+        async function refreshAllData() {
+            const refreshIcon = document.getElementById('refreshIcon');
+            refreshIcon.classList.add('fa-spin');
 
-            const now = new Date();
-
-            // 24 Hours Data (24 points, hourly)
-            for (let i = 23; i >= 0; i--) {
-                const t = new Date(now.getTime() - i * 3600 * 1000);
-                const hour = t.getHours();
-                
-                // Diurnal cycle simulation
-                const isDay = hour >= 6 && hour <= 18;
-                const tempBase = isDay ? 24 + Math.sin((hour - 6) / 12 * Math.PI) * 5 : 19 + Math.random();
-                const humBase = isDay ? 65 - Math.sin((hour - 6) / 12 * Math.PI) * 15 : 78 + Math.random() * 4;
-                const luxBase = isDay ? Math.sin((hour - 6) / 12 * Math.PI) * 35000 + Math.random() * 2000 : 0;
-                const pressBase = 1012 + Math.sin(hour / 24 * Math.PI * 2) * 2;
-
-                data24h.timestamps.push(t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
-                data24h.temp.push(parseFloat(tempBase.toFixed(1)));
-                data24h.humidity.push(parseFloat(humBase.toFixed(1)));
-                data24h.pressure.push(parseFloat(pressBase.toFixed(1)));
-                data24h.lux.push(Math.round(luxBase));
-            }
-
-            // 30 Days Data (30 points, daily)
-            for (let i = 29; i >= 0; i--) {
-                const d = new Date(now.getTime() - i * 86400 * 1000);
-                const dayAvgTemp = 22 + Math.sin(i / 5) * 3 + (Math.random() * 1.5);
-                const dayAvgHum = 68 + Math.cos(i / 5) * 8 + (Math.random() * 2);
-                const dayAvgPress = 1013 + Math.sin(i / 3) * 4;
-                const dayAvgLux = 22000 + Math.random() * 8000;
-
-                data30d.timestamps.push(d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
-                data30d.temp.push(parseFloat(dayAvgTemp.toFixed(1)));
-                data30d.humidity.push(parseFloat(dayAvgHum.toFixed(1)));
-                data30d.pressure.push(parseFloat(dayAvgPress.toFixed(1)));
-                data30d.lux.push(Math.round(dayAvgLux));
-            }
-
-            APP_STATE.telemetryData['24h'] = data24h;
-            APP_STATE.telemetryData['30d'] = data30d;
-
-            // Update real-time cards with last value
-            const lastIdx = data24h.temp.length - 1;
-            updateRealtimeCards(
-                data24h.temp[lastIdx],
-                data24h.humidity[lastIdx],
-                data24h.pressure[lastIdx],
-                data24h.lux[lastIdx]
-            );
-        }
-
-        async function fetchAdafruitIOData() {
-            if (APP_STATE.demoMode || !APP_STATE.aioUser || !APP_STATE.aioKey) {
-                generateDemoTelemetry();
-                updateStatusBadge(true, "Modo Demonstrativo");
+            if (!config.aioUsername || !config.aioKey) {
+                refreshIcon.classList.remove('fa-spin');
                 return;
             }
 
             try {
-                updateStatusBadge(true, "Conectando ao Adafruit IO...", "bg-amber-500");
-
-                const headers = { 'X-AIO-Key': APP_STATE.aioKey };
-                const baseUrl = `https://io.adafruit.com/api/v2/${APP_STATE.aioUser}/feeds`;
-
-                // Fetch real last value for cards
-                const [tempRes, humRes, pressRes, luxRes] = await Promise.all([
-                    fetch(`${baseUrl}/${AIO_FEEDS.temp}/data/retain?hours=24`, { headers }),
-                    fetch(`${baseUrl}/${AIO_FEEDS.humidity}/data/retain?hours=24`, { headers }),
-                    fetch(`${baseUrl}/${AIO_FEEDS.pressure}/data/retain?hours=24`, { headers }),
-                    fetch(`${baseUrl}/${AIO_FEEDS.lux}/data/retain?hours=24`, { headers })
+                // Fetch last data point for each sensor feed in parallel
+                await Promise.all([
+                    fetchFeedLast('temp', FEED_KEYS.temp, 'valTemp', 'timeTemp', 'statusTemp', '°C'),
+                    fetchFeedLast('umid', FEED_KEYS.umid, 'valUmid', 'timeUmid', 'statusUmid', '%'),
+                    fetchFeedLast('press', FEED_KEYS.press, 'valPress', 'timePress', 'statusPress', 'hPa'),
+                    fetchFeedLast('lux', FEED_KEYS.lux, 'valLux', 'timeLux', 'statusLux', 'Lux')
                 ]);
 
-                if (!tempRes.ok) throw new Error("Falha na resposta Adafruit IO");
-
-                const tempData = await tempRes.json();
-                const humData = await humRes.json();
-                const pressData = await pressRes.json();
-                const luxData = await luxRes.json();
-
-                // Process feed data for 24h & 30d
-                processAdafruitFeedData(tempData, humData, pressData, luxData);
-                updateStatusBadge(true, "Conectado (Adafruit IO)");
-
+                // Update Chart Data
+                await fetchHistoricalChartData();
             } catch (err) {
-                console.warn("Erro ao buscar dados Adafruit, ativando fallback demo:", err);
-                generateDemoTelemetry();
-                updateStatusBadge(false, "Erro Adafruit (Usando Demo)");
+                console.error("Erro ao atualizar dados:", err);
+            } finally {
+                refreshIcon.classList.remove('fa-spin');
             }
         }
 
-        function processAdafruitFeedData(tempArr, humArr, pressArr, luxArr) {
-            // Helper to parse Adafruit data series
-            const parseSeries = (arr) => {
-                return (arr || []).map(item => ({
-                    val: parseFloat(item.value),
-                    date: new Date(item.created_at)
-                })).reverse();
-            };
+        async function fetchFeedLast(type, feedKey, valElId, timeElId, statusElId, unit) {
+            try {
+                const url = `https://io.adafruit.com/api/v2/${config.aioUsername}/feeds/${feedKey}/data/last`;
+                const response = await fetch(url, {
+                    headers: { 'X-AIO-Key': config.aioKey }
+                });
 
-            const tSeries = parseSeries(tempArr);
-            const hSeries = parseSeries(humArr);
-            const pSeries = parseSeries(pressArr);
-            const lSeries = parseSeries(luxArr);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-            if (tSeries.length > 0) {
-                const latestT = tSeries[tSeries.length - 1].val;
-                const latestH = hSeries.length > 0 ? hSeries[hSeries.length - 1].val : 65;
-                const latestP = pSeries.length > 0 ? pSeries[pSeries.length - 1].val : 1013;
-                const latestL = lSeries.length > 0 ? lSeries[lSeries.length - 1].val : 15000;
-                
-                updateRealtimeCards(latestT, latestH, latestP, latestL);
-            }
+                const data = await response.json();
+                const rawVal = parseFloat(data.value);
+                const date = new Date(data.created_at);
 
-            // Populate 24h & 30d datasets
-            APP_STATE.telemetryData['24h'] = {
-                timestamps: tSeries.map(i => i.date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })),
-                temp: tSeries.map(i => i.val),
-                humidity: hSeries.map(i => i.val),
-                pressure: pSeries.map(i => i.val),
-                lux: lSeries.map(i => i.val)
-            };
+                document.getElementById(valElId).innerText = isNaN(rawVal) ? '--' : rawVal.toFixed(1);
+                document.getElementById(timeElId).innerText = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            // Duplicate/Adapt for 30d view if less points exist
-            APP_STATE.telemetryData['30d'] = { ...APP_STATE.telemetryData['24h'] };
-        }
-
-        function updateRealtimeCards(temp, hum, press, lux) {
-            document.getElementById('val-temp').innerHTML = `${temp.toFixed(1)} <span class="text-lg font-normal text-slate-400">°C</span>`;
-            document.getElementById('val-humidity').innerHTML = `${hum.toFixed(1)} <span class="text-lg font-normal text-slate-400">%</span>`;
-            document.getElementById('val-pressure').innerHTML = `${press.toFixed(1)} <span class="text-lg font-normal text-slate-400">hPa</span>`;
-            document.getElementById('val-lux').innerHTML = `${lux.toLocaleString('pt-BR')} <span class="text-lg font-normal text-slate-400">Lux</span>`;
-
-            const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('last-update-label').innerText = `Última leitura: Hoje às ${nowStr}`;
-        }
-
-        function updateStatusBadge(online, text, customBg = null) {
-            const badge = document.getElementById('status-badge');
-            const txt = document.getElementById('status-text');
-
-            txt.innerText = text;
-            if (online) {
-                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-medium";
-            } else {
-                badge.className = "flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-950/60 border border-rose-500/30 text-rose-300 text-xs font-medium";
-            }
-        }
-
-        function switchPeriod(period) {
-            APP_STATE.selectedPeriod = period;
-
-            // Toggle active styling on period pill buttons
-            const btn24h = document.getElementById('btn-period-24h');
-            const btn30d = document.getElementById('btn-period-30d');
-
-            if (period === '24h') {
-                btn24h.className = 'pill-btn pill-btn-period-active';
-                btn30d.className = 'pill-btn';
-            } else {
-                btn24h.className = 'pill-btn';
-                btn30d.className = 'pill-btn pill-btn-period-active';
-            }
-
-            renderChart();
-        }
-
-        function switchMetric(metric) {
-            APP_STATE.selectedMetric = metric;
-
-            // Toggle active styling on metric pill buttons
-            ['temp', 'humidity', 'pressure', 'lux'].forEach(m => {
-                const btn = document.getElementById(`btn-metric-${m}`);
-                if (m === metric) {
-                    btn.className = 'pill-btn pill-btn-metric-active';
+                // Status Badge logic based on sensible greenhouse ranges
+                const statusEl = document.getElementById(statusElId);
+                if (type === 'temp') {
+                    if (rawVal >= 18 && rawVal <= 30) {
+                        statusEl.className = 'px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                        statusEl.innerText = 'Ideal';
+                    } else {
+                        statusEl.className = 'px-2 py-0.5 rounded text-[10px] font-medium bg-rose-500/20 text-rose-300 border border-rose-500/30';
+                        statusEl.innerText = 'Atenção';
+                    }
+                } else if (type === 'umid') {
+                    if (rawVal >= 50 && rawVal <= 85) {
+                        statusEl.className = 'px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                        statusEl.innerText = 'Ideal';
+                    } else {
+                        statusEl.className = 'px-2 py-0.5 rounded text-[10px] font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30';
+                        statusEl.innerText = 'Aviso';
+                    }
                 } else {
-                    btn.className = 'pill-btn';
+                    statusEl.className = 'px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300';
+                    statusEl.innerText = 'Ativo';
                 }
-            });
-
-            renderChart();
+            } catch (err) {
+                console.warn(`Erro no feed ${feedKey}:`, err);
+                document.getElementById(valElId).innerText = '--';
+                document.getElementById(statusElId).innerText = 'Erro API';
+            }
         }
 
-        function renderChart() {
+        function initChart() {
             const ctx = document.getElementById('telemetryChart').getContext('2d');
-            const period = APP_STATE.selectedPeriod;
-            const metric = APP_STATE.selectedMetric;
-            const config = METRIC_CONFIGS[metric];
-
-            const dataset = APP_STATE.telemetryData[period];
-            if (!dataset || !dataset.timestamps || dataset.timestamps.length === 0) {
-                return;
-            }
-
-            const dataValues = dataset[metric] || [];
-            const labels = dataset.timestamps;
-
-            // Calculate Quick Stats
-            if (dataValues.length > 0) {
-                const sum = dataValues.reduce((a, b) => a + b, 0);
-                const avg = (sum / dataValues.length).toFixed(1);
-                const min = Math.min(...dataValues).toFixed(1);
-                const max = Math.max(...dataValues).toFixed(1);
-                const diff = (max - min).toFixed(1);
-
-                document.getElementById('stat-avg').innerText = `${avg} ${config.unit}`;
-                document.getElementById('stat-min').innerText = `${min} ${config.unit}`;
-                document.getElementById('stat-max').innerText = `${max} ${config.unit}`;
-                document.getElementById('stat-var').innerText = `± ${diff} ${config.unit}`;
-            }
-
-            // Create Gradient Fill
-            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, config.bgGradient[0]);
-            gradient.addColorStop(1, config.bgGradient[1]);
-
-            if (APP_STATE.chartInstance) {
-                APP_STATE.chartInstance.destroy();
-            }
-
-            APP_STATE.chartInstance = new Chart(ctx, {
+            
+            telemetryChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels: [],
                     datasets: [{
-                        label: config.label,
-                        data: dataValues,
-                        borderColor: config.color,
-                        borderWidth: 2.5,
-                        backgroundColor: gradient,
+                        label: 'Valor',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                        borderWidth: 2,
                         fill: true,
-                        tension: 0.35,
-                        pointBackgroundColor: config.color,
-                        pointBorderColor: '#090d16',
-                        pointBorderWidth: 2,
-                        pointRadius: labels.length > 25 ? 2 : 4,
-                        pointHoverRadius: 6
+                        tension: 0.3,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#10b981'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
+                            mode: 'index',
+                            intersect: false,
                             backgroundColor: '#0f172a',
                             titleColor: '#f8fafc',
-                            bodyColor: config.color,
+                            bodyColor: '#34d399',
                             borderColor: '#334155',
                             borderWidth: 1,
-                            padding: 12,
+                            padding: 10,
                             displayColors: false,
                             callbacks: {
                                 label: function(context) {
-                                    return `${config.label}: ${context.parsed.y} ${config.unit}`;
+                                    return `Valor: ${context.parsed.y.toFixed(2)}`;
                                 }
                             }
                         }
                     },
                     scales: {
                         x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.05)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: '#64748b',
-                                font: { size: 11 }
-                            }
+                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
+                            ticks: { color: '#94a3b8', font: { size: 11 }, maxTicksLimit: 8 }
                         },
                         y: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.05)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: '#64748b',
-                                font: { size: 11 },
-                                callback: function(value) {
-                                    return value + ' ' + config.unit;
-                                }
-                            }
+                            grid: { color: 'rgba(51, 65, 85, 0.4)' },
+                            ticks: { color: '#94a3b8', font: { size: 11 } }
                         }
                     }
                 }
             });
         }
 
-        // MOCK PHOTOS FOR DEMO MODE
-        const DEMO_PHOTOS = [
-            {
-                name: 'estufa_mudas_tomate_01.jpg',
-                download_url: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=1000&q=80',
-                date: '2026-09-28T10:15:00Z',
-                size: '2.4 MB'
-            },
-            {
-                name: 'estufa_hidroponia_alface_02.jpg',
-                download_url: 'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&w=1000&q=80',
-                date: '2026-09-28T08:00:00Z',
-                size: '3.1 MB'
-            },
-            {
-                name: 'estufa_geral_manha_03.jpg',
-                download_url: 'https://images.unsplash.com/photo-1516253593875-bd7ba052fbc5?auto=format&fit=crop&w=1000&q=80',
-                date: '2026-09-27T16:45:00Z',
-                size: '1.9 MB'
-            },
-            {
-                name: 'estufa_sistema_gotejamento_04.jpg',
-                download_url: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&w=1000&q=80',
-                date: '2026-09-27T11:30:00Z',
-                size: '2.8 MB'
-            },
-            {
-                name: 'estufa_morangos_floracao_05.jpg',
-                download_url: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=1000&q=80',
-                date: '2026-09-26T14:20:00Z',
-                size: '2.2 MB'
-            },
-            {
-                name: 'estufa_bancadas_folhosas_06.jpg',
-                download_url: 'https://images.unsplash.com/photo-1592417817098-8f3d6eb231fc?auto=format&fit=crop&w=1000&q=80',
-                date: '2026-09-25T09:10:00Z',
-                size: '2.7 MB'
-            }
-        ];
+        function setMetric(metric) {
+            currentMetric = metric;
+            // Update UI pills for metrics
+            ['temp', 'umid', 'press', 'lux'].forEach(m => {
+                const btn = document.getElementById(`pill-metric-${m}`);
+                if (m === metric) {
+                    btn.className = 'px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full transition cursor-pointer shadow-sm';
+                } else {
+                    btn.className = 'px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer';
+                }
+            });
+            fetchHistoricalChartData();
+        }
 
-        async function fetchGitHubPhotos() {
-            const grid = document.getElementById('photos-grid');
-            const loader = document.getElementById('gallery-loading');
+        function setTimeframe(tf) {
+            currentTimeframe = tf;
+            // Update UI pills for timeframe
+            ['24h', '30d'].forEach(t => {
+                const btn = document.getElementById(`pill-time-${t}`);
+                if (t === tf) {
+                    btn.className = 'px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full transition cursor-pointer shadow-sm';
+                } else {
+                    btn.className = 'px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer';
+                }
+            });
+            fetchHistoricalChartData();
+        }
 
-            grid.innerHTML = '';
+        async function fetchHistoricalChartData() {
+            if (!config.aioUsername || !config.aioKey) return;
+
+            const loader = document.getElementById('chartLoadingOverlay');
             loader.classList.remove('hidden');
 
-            if (APP_STATE.demoMode || !APP_STATE.ghUser || !APP_STATE.ghRepo) {
-                // Use Demo Photos
-                setTimeout(() => {
-                    APP_STATE.photos = DEMO_PHOTOS;
-                    APP_STATE.filteredPhotos = [...DEMO_PHOTOS];
-                    renderGalleryGrid();
-                    loader.classList.add('hidden');
-                }, 400);
-                return;
-            }
-
+            const feedKey = FEED_KEYS[currentMetric];
             try {
-                const pathClean = APP_STATE.ghPath.replace(/^\/+|\/+$/g, '');
-                const url = `https://api.github.com/repos/${APP_STATE.ghUser}/${APP_STATE.ghRepo}/contents/${pathClean}`;
+                // Fetch up to 1000 data points from Adafruit IO
+                const url = `https://io.adafruit.com/api/v2/${config.aioUsername}/feeds/${feedKey}/data?limit=1000`;
+                const response = await fetch(url, {
+                    headers: { 'X-AIO-Key': config.aioKey }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const rawData = await response.json();
                 
-                const response = await fetch(url);
-                if (!response.ok) throw new Error("Repositório ou pasta não encontrada no GitHub");
+                if (!rawData || rawData.length === 0) {
+                    displayEmptyChartState();
+                    return;
+                }
 
-                const files = await response.json();
-                
-                // Filter only image files (.jpg, .png, .jpeg, .webp)
-                const imageFiles = files.filter(f => f.type === 'file' && /\.(jpg|jpeg|png|webp)$/i.test(f.name));
+                // Process and sort raw data chronologically (oldest to newest)
+                const parsedPoints = rawData.map(item => ({
+                    timestamp: new Date(item.created_at).getTime(),
+                    value: parseFloat(item.value)
+                })).filter(p => !isNaN(p.value) && !isNaN(p.timestamp))
+                  .sort((a, b) => a.timestamp - b.timestamp);
 
-                APP_STATE.photos = imageFiles.map((f, idx) => ({
-                    name: f.name,
-                    download_url: f.download_url,
-                    date: new Date().toISOString(), // GitHub content API doesn't give date directly unless commit API is queried
-                    size: (f.size / (1024 * 1024)).toFixed(1) + ' MB'
-                }));
+                if (parsedPoints.length === 0) {
+                    displayEmptyChartState();
+                    return;
+                }
 
-                APP_STATE.filteredPhotos = [...APP_STATE.photos];
-                renderGalleryGrid();
+                // AUTO-ADJUST TO AVAILABLE DATA BOUNDS:
+                // Oldest available timestamp (T_min) to latest timestamp (T_max)
+                const tMin = parsedPoints[0].timestamp;
+                const tMax = parsedPoints[parsedPoints.length - 1].timestamp;
+
+                // Define bucket interval size based on user timeframe selection:
+                // 24 Horas -> 5 minutos (300.000 ms)
+                // 30 Dias  -> 30 minutos (1.800.000 ms)
+                const intervalMs = (currentTimeframe === '24h') ? (5 * 60 * 1000) : (30 * 60 * 1000);
+
+                // Group points into dynamic time buckets spanning STRICTLY between tMin and tMax
+                const bucketMap = new Map();
+
+                parsedPoints.forEach(pt => {
+                    // Bucket key rounded to nearest interval
+                    const bucketKey = Math.floor(pt.timestamp / intervalMs) * intervalMs;
+                    if (!bucketMap.has(bucketKey)) {
+                        bucketMap.set(bucketKey, []);
+                    }
+                    bucketMap.get(bucketKey).push(pt.value);
+                });
+
+                // Construct Chart arrays without empty zero pre-filling
+                const labels = [];
+                const chartValues = [];
+                let totalSum = 0;
+                let minVal = Infinity;
+                let maxVal = -Infinity;
+                let count = 0;
+
+                // Iterate over sorted buckets
+                const sortedBucketKeys = Array.from(bucketMap.keys()).sort((a, b) => a - b);
+
+                sortedBucketKeys.forEach(bKey => {
+                    const vals = bucketMap.get(bKey);
+                    const avg = vals.reduce((sum, v) => sum + v, 0) / vals.length;
+                    
+                    const dateObj = new Date(bKey);
+                    let label = '';
+                    if (currentTimeframe === '24h') {
+                        label = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    } else {
+                        label = `${dateObj.getDate()}/${dateObj.getMonth()+1} ${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                    }
+
+                    labels.push(label);
+                    chartValues.push(avg);
+
+                    // Statistics tracking
+                    vals.forEach(v => {
+                        totalSum += v;
+                        if (v < minVal) minVal = v;
+                        if (v > maxVal) maxVal = v;
+                        count++;
+                    });
+                });
+
+                // Update Chart.js dataset and colors based on active metric
+                const colorMap = {
+                    temp: '#10b981', // Emerald
+                    umid: '#38bdf8', // Sky Blue
+                    press: '#a855f7', // Purple
+                    lux: '#f59e0b'   // Amber
+                };
+                const activeColor = colorMap[currentMetric] || '#10b981';
+
+                telemetryChart.data.labels = labels;
+                telemetryChart.data.datasets[0].data = chartValues;
+                telemetryChart.data.datasets[0].borderColor = activeColor;
+                telemetryChart.data.datasets[0].pointBackgroundColor = activeColor;
+                telemetryChart.data.datasets[0].backgroundColor = activeColor + '1F';
+                telemetryChart.update();
+
+                // Calculate human-readable available span description
+                const durationHours = Math.max(0.1, (tMax - tMin) / (1000 * 60 * 60));
+                let spanText = '';
+                if (durationHours < 24) {
+                    spanText = `${durationHours.toFixed(1)} hrs dispo.`;
+                } else {
+                    spanText = `${(durationHours / 24).toFixed(1)} dias dispo.`;
+                }
+
+                // Update Statistics display
+                document.getElementById('statAvg').innerText = (totalSum / count).toFixed(1);
+                document.getElementById('statMin').innerText = minVal.toFixed(1);
+                document.getElementById('statMax').innerText = maxVal.toFixed(1);
+                document.getElementById('statCount').innerText = count;
+                document.getElementById('statSpan').innerText = spanText;
 
             } catch (err) {
-                console.warn("Erro ao buscar fotos do GitHub:", err);
-                grid.innerHTML = `
-                    <div class="col-span-full py-8 text-center text-slate-400">
-                        <i class="fa-solid fa-triangle-exclamation text-amber-400 text-2xl mb-2"></i>
-                        <p class="text-sm">Não foi possível carregar as fotos do GitHub (${err.message}).</p>
-                        <p class="text-xs text-slate-500 mt-1">Verifique as configurações do repositório no menu ⚙️.</p>
-                    </div>
-                `;
+                console.error("Erro ao carregar histórico:", err);
+                displayEmptyChartState();
             } finally {
                 loader.classList.add('hidden');
             }
         }
 
-        function renderGalleryGrid() {
-            const grid = document.getElementById('photos-grid');
-            grid.innerHTML = '';
+        function displayEmptyChartState() {
+            telemetryChart.data.labels = [];
+            telemetryChart.data.datasets[0].data = [];
+            telemetryChart.update();
 
-            if (APP_STATE.filteredPhotos.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-full py-12 text-center text-slate-500">
-                        <i class="fa-solid fa-image text-3xl mb-2 opacity-50"></i>
-                        <p class="text-sm">Nenhuma foto encontrada para os filtros selecionados.</p>
-                    </div>
-                `;
+            document.getElementById('statAvg').innerText = '--';
+            document.getElementById('statMin').innerText = '--';
+            document.getElementById('statMax').innerText = '--';
+            document.getElementById('statCount').innerText = '0';
+            document.getElementById('statSpan').innerText = 'Sem Dados';
+        }
+
+        async function fetchGitHubPhotos() {
+            if (!config.ghUser || !config.ghRepo) return;
+
+            const loader = document.getElementById('galleryLoader');
+            const emptyState = document.getElementById('galleryEmptyState');
+            const mainImg = document.getElementById('mainGalleryImg');
+
+            loader.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            mainImg.classList.add('hidden');
+
+            try {
+                // REST API endpoint for photos directory
+                const url = `https://api.github.com/repos/${config.ghUser}/${config.ghRepo}/contents/fotos`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Filter for valid image formats
+                const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+                galleryPhotos = data.filter(item => {
+                    const name = item.name.toLowerCase();
+                    return validExtensions.some(ext => name.endsWith(ext));
+                }).map(item => {
+                    // Extract or parse date from filename if present (e.g. 2026-03-28_102030.jpg or IMG_20260328)
+                    let detectedDate = '';
+                    const match = item.name.match(/\d{4}-\d{2}-\d{2}/) || item.name.match(/\d{8}/);
+                    if (match) {
+                        if (match[0].includes('-')) {
+                            detectedDate = match[0];
+                        } else {
+                            detectedDate = `${match[0].substring(0,4)}-${match[0].substring(4,6)}-${match[0].substring(6,8)}`;
+                        }
+                    }
+                    return {
+                        name: item.name,
+                        downloadUrl: item.download_url,
+                        date: detectedDate
+                    };
+                });
+
+                if (galleryPhotos.length === 0) {
+                    loader.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                // Default filtered list is all photos
+                filteredPhotos = [...galleryPhotos];
+                currentPhotoIndex = 0;
+                renderGalleryActivePhoto();
+                renderThumbnails();
+
+            } catch (err) {
+                console.warn("Erro ao buscar fotos do GitHub:", err);
+                loader.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            }
+        }
+
+        function renderGalleryActivePhoto() {
+            const loader = document.getElementById('galleryLoader');
+            const mainImg = document.getElementById('mainGalleryImg');
+            const counter = document.getElementById('photoIndexCounter');
+            const filenameEl = document.getElementById('photoFilename');
+
+            if (filteredPhotos.length === 0) {
+                mainImg.classList.add('hidden');
+                document.getElementById('galleryEmptyState').classList.remove('hidden');
+                counter.innerText = '0 / 0';
+                filenameEl.innerText = '--';
                 return;
             }
 
-            APP_STATE.filteredPhotos.forEach((photo, index) => {
-                const dateObj = new Date(photo.date);
-                const dateStr = dateObj.toLocaleDateString('pt-BR');
-                const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const current = filteredPhotos[currentPhotoIndex];
+            mainImg.src = current.downloadUrl;
+            mainImg.classList.remove('hidden');
+            loader.classList.add('hidden');
 
-                const card = document.createElement('div');
-                card.className = "group glass-panel rounded-xl overflow-hidden border border-slate-800 hover:border-emerald-500/50 transition duration-300 cursor-pointer flex flex-col";
-                card.onclick = () => openLightbox(index);
+            counter.innerText = `${currentPhotoIndex + 1} de ${filteredPhotos.length}`;
+            filenameEl.innerText = current.name;
 
-                card.innerHTML = `
-                    <div class="relative h-48 bg-slate-950 overflow-hidden">
-                        <img src="${photo.download_url}" alt="${photo.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-3">
-                            <span class="text-xs font-semibold text-white flex items-center gap-1.5"><i class="fa-solid fa-expand text-emerald-400"></i> Expandir Foto</span>
-                        </div>
-                    </div>
-                    <div class="p-3.5 flex flex-col justify-between flex-1 bg-slate-900/40">
-                        <span class="text-xs font-semibold text-slate-200 truncate" title="${photo.name}">${photo.name}</span>
-                        <div class="flex items-center justify-between text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/60">
-                            <span><i class="fa-regular fa-calendar text-emerald-400 mr-1"></i> ${dateStr} ${timeStr}</span>
-                            <span class="text-slate-500 font-mono">${photo.size}</span>
-                        </div>
-                    </div>
-                `;
+            // Highlight active thumbnail
+            updateActiveThumbnailHighlight();
+        }
 
-                grid.appendChild(card);
+        function renderThumbnails() {
+            const container = document.getElementById('thumbnailContainer');
+            container.innerHTML = '';
+
+            filteredPhotos.forEach((photo, idx) => {
+                const thumb = document.createElement('div');
+                thumb.className = `flex-shrink-0 w-20 h-16 rounded-xl overflow-hidden border-2 cursor-pointer transition ${idx === currentPhotoIndex ? 'border-emerald-500 scale-105' : 'border-slate-800 opacity-60 hover:opacity-100'}`;
+                thumb.onclick = () => {
+                    currentPhotoIndex = idx;
+                    renderGalleryActivePhoto();
+                };
+
+                const img = document.createElement('img');
+                img.src = photo.downloadUrl;
+                img.className = 'w-full h-full object-cover';
+                img.alt = photo.name;
+
+                thumb.appendChild(img);
+                container.appendChild(thumb);
             });
         }
 
-        function filterPhotosByDate() {
-            const dateVal = document.getElementById('gallery-date-filter').value;
-            if (!dateVal) {
-                APP_STATE.filteredPhotos = [...APP_STATE.photos];
-            } else {
-                APP_STATE.filteredPhotos = APP_STATE.photos.filter(p => {
-                    const pDate = new Date(p.date).toISOString().split('T')[0];
-                    return pDate === dateVal;
-                });
+        function updateActiveThumbnailHighlight() {
+            const container = document.getElementById('thumbnailContainer');
+            const children = container.children;
+            for (let i = 0; i < children.length; i++) {
+                if (i === currentPhotoIndex) {
+                    children[i].className = 'flex-shrink-0 w-20 h-16 rounded-xl overflow-hidden border-2 border-emerald-500 scale-105 transition cursor-pointer shadow-md';
+                    children[i].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                } else {
+                    children[i].className = 'flex-shrink-0 w-20 h-16 rounded-xl overflow-hidden border-2 border-slate-800 opacity-60 hover:opacity-100 transition cursor-pointer';
+                }
             }
-            renderGalleryGrid();
-        }
-
-        function clearDateFilter() {
-            document.getElementById('gallery-date-filter').value = '';
-            APP_STATE.filteredPhotos = [...APP_STATE.photos];
-            renderGalleryGrid();
-        }
-
-        function openLightbox(index) {
-            APP_STATE.currentPhotoIndex = index;
-            updateLightboxContent();
-            document.getElementById('photo-lightbox').classList.remove('hidden');
-        }
-
-        function closeLightbox() {
-            document.getElementById('photo-lightbox').classList.add('hidden');
-        }
-
-        function updateLightboxContent() {
-            const photo = APP_STATE.filteredPhotos[APP_STATE.currentPhotoIndex];
-            if (!photo) return;
-
-            const dateObj = new Date(photo.date);
-            const formattedDate = `${dateObj.toLocaleDateString('pt-BR')} ${dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-
-            document.getElementById('lb-image').src = photo.download_url;
-            document.getElementById('lb-filename').innerText = photo.name;
-            document.getElementById('lb-date').innerText = formattedDate;
-            document.getElementById('lb-download').href = photo.download_url;
-            document.getElementById('lb-index').innerText = `Imagem ${APP_STATE.currentPhotoIndex + 1} de ${APP_STATE.filteredPhotos.length}`;
         }
 
         function prevPhoto() {
-            if (APP_STATE.filteredPhotos.length === 0) return;
-            APP_STATE.currentPhotoIndex = (APP_STATE.currentPhotoIndex - 1 + APP_STATE.filteredPhotos.length) % APP_STATE.filteredPhotos.length;
-            updateLightboxContent();
+            if (filteredPhotos.length === 0) return;
+            currentPhotoIndex = (currentPhotoIndex - 1 + filteredPhotos.length) % filteredPhotos.length;
+            renderGalleryActivePhoto();
         }
 
         function nextPhoto() {
-            if (APP_STATE.filteredPhotos.length === 0) return;
-            APP_STATE.currentPhotoIndex = (APP_STATE.currentPhotoIndex + 1) % APP_STATE.filteredPhotos.length;
-            updateLightboxContent();
+            if (filteredPhotos.length === 0) return;
+            currentPhotoIndex = (currentPhotoIndex + 1) % filteredPhotos.length;
+            renderGalleryActivePhoto();
         }
 
-        function refreshAllData() {
-            fetchAdafruitIOData().then(() => {
-                renderChart();
-            });
-            fetchGitHubPhotos();
+        function filterGalleryByDate() {
+            const selectedDate = document.getElementById('galleryDateFilter').value;
+            if (!selectedDate) {
+                filteredPhotos = [...galleryPhotos];
+            } else {
+                filteredPhotos = galleryPhotos.filter(p => p.date === selectedDate);
+            }
+            currentPhotoIndex = 0;
+            renderGalleryActivePhoto();
+            renderThumbnails();
         }
 
-        window.onload = function() {
-            // 1. Initialize settings from LocalStorage
-            loadSettings();
+        function clearGalleryDateFilter() {
+            document.getElementById('galleryDateFilter').value = '';
+            filteredPhotos = [...galleryPhotos];
+            currentPhotoIndex = 0;
+            renderGalleryActivePhoto();
+            renderThumbnails();
+        }
 
-            // 2. Attach Event Listeners
-            document.getElementById('btn-settings').onclick = openSettingsModal;
-            document.getElementById('btn-refresh').onclick = refreshAllData;
-            document.getElementById('gallery-date-filter').onchange = filterPhotosByDate;
+        function openLightbox() {
+            if (filteredPhotos.length === 0) return;
+            const current = filteredPhotos[currentPhotoIndex];
+            document.getElementById('lightboxImg').src = current.downloadUrl;
+            document.getElementById('lightboxTitle').innerText = current.name;
+            document.getElementById('lightboxModal').classList.remove('hidden');
+            resetLightboxZoom();
+        }
 
-            // Keyboard navigation for lightbox
-            document.addEventListener('keydown', (e) => {
-                const lb = document.getElementById('photo-lightbox');
-                if (!lb.classList.contains('hidden')) {
-                    if (e.key === 'ArrowLeft') prevPhoto();
-                    if (e.key === 'ArrowRight') nextPhoto();
-                    if (e.key === 'Escape') closeLightbox();
-                }
-            });
+        function closeLightbox() {
+            document.getElementById('lightboxModal').classList.add('hidden');
+        }
 
-            // 3. Initial Load
-            refreshAllData();
+        function zoomInLightbox() {
+            lightboxZoomScale += 0.25;
+            document.getElementById('lightboxImg').style.transform = `scale(${lightboxZoomScale})`;
+        }
 
-            // 4. Set auto-refresh timer (Every 60s)
-            setInterval(() => {
-                refreshAllData();
-            }, 60000);
-        };
+        function zoomOutLightbox() {
+            if (lightboxZoomScale > 0.5) {
+                lightboxZoomScale -= 0.25;
+                document.getElementById('lightboxImg').style.transform = `scale(${lightboxZoomScale})`;
+            }
+        }
+
+        function resetLightboxZoom() {
+            lightboxZoomScale = 1;
+            document.getElementById('lightboxImg').style.transform = 'scale(1)';
+        }
+
+        // Keyboard arrow navigation support for gallery
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                prevPhoto();
+            } else if (e.key === 'ArrowRight') {
+                nextPhoto();
+            } else if (e.key === 'Escape') {
+                closeLightbox();
+                closeSettingsModal();
+            }
+        });
     </script>
 </body>
 </html>
