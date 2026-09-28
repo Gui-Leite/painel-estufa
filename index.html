@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel da Estufa Agrícola</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Painel de Monitoramento - Estufa Agrícola</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -13,6 +14,7 @@
                 extend: {
                     colors: {
                         emerald: {
+                            400: '#34d399',
                             500: '#10b981',
                             600: '#059669',
                             700: '#047857',
@@ -22,18 +24,29 @@
                             900: '#0f172a',
                             950: '#020617',
                         }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
-    <!-- FontAwesome Icons CDN -->
+
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js CDN -->
+
+    <!-- Chart.js and Date Adapter -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
         body {
             font-family: 'Inter', sans-serif;
             background-color: #0f172a;
@@ -56,485 +69,518 @@
             background: #475569;
         }
 
-        /* Modal backdrop blur */
-        .modal-backdrop {
-            background-color: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(6px);
+        /* Pill Buttons Custom Styling */
+        .pill-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .pill-btn.active {
+            background-color: #059669;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
         }
 
-        /* Subtle pulse glow for live indicator */
-        .pulse-emerald {
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            animation: pulse-green 2s infinite;
+        /* Smooth transitions */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        @keyframes pulse-green {
-            0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            }
-            70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-            }
-            100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-            }
+
+        .image-container {
+            background-color: #020617;
+            background-image: radial-gradient(#1e293b 1px, transparent 0);
+            background-size: 24px 24px;
         }
     </style>
 </head>
 <body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between">
 
-    <!-- TOP HEADER -->
-    <header class="border-b border-slate-800 bg-slate-950/80 sticky top-0 z-30 backdrop-blur-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="p-2 bg-emerald-600/20 text-emerald-400 rounded-xl border border-emerald-500/30">
-                    <i class="fa-solid me-0 fa-seedling text-xl"></i>
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 lg:px-8 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-emerald-600/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+                    <i class="fa-solid fa-leaf text-2xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                        Painel da Estufa Agrícola
-                        <span id="liveStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5"></span> Configurar API
+                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        Painel de Estufa Agrícola
+                        <span id="syncStatusBadge" class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-normal">
+                            <i class="fa-solid fa-circle text-[8px] animate-pulse mr-1"></i> Conectado
                         </span>
                     </h1>
-                    <p class="text-xs text-slate-400 hidden sm:block">Monitoramento em Tempo Real & Galeria Fotográfica</p>
+                    <p class="text-xs text-slate-400">Monitoramento IoT &amp; Telemetria em Tempo Real</p>
                 </div>
             </div>
 
-            <!-- Action Controls -->
-            <div class="flex items-center space-x-3">
-                <button id="btnRefresh" onclick="refreshAllData()" class="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-lg text-sm font-medium transition flex items-center gap-2 px-3">
-                    <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
-                    <span class="hidden sm:inline">Atualizar</span>
+            <!-- Controls & Settings Header Actions -->
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <button id="btnRefreshAll" onclick="loadAllData()" class="px-3.5 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate text-emerald-400" id="refreshIcon"></i>
+                    <span>Atualizar</span>
                 </button>
-                <button onclick="openSettingsModal()" class="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/60 rounded-lg text-sm font-medium transition flex items-center gap-2 px-3">
-                    <i class="fa-solid fa-gear text-slate-300"></i>
-                    <span class="hidden sm:inline">Configurações</span>
+                <button onclick="openSettingsModal()" class="px-3.5 py-2 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-lg shadow-emerald-900/30 transition flex items-center gap-2">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Configurações</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- MAIN CONTENT WRAPPER -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 flex-grow w-full">
+    <!-- Main Container -->
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 flex-grow">
 
-        <!-- CONFIG WARNING BANNER (Hidden when configured) -->
-        <div id="configWarningBanner" class="hidden bg-amber-950/40 border border-amber-500/40 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center space-x-3">
-                <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg">
-                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-                </div>
-                <div>
-                    <h3 class="text-sm font-semibold text-amber-200">Credenciais do Adafruit IO não configuradas</h3>
-                    <p class="text-xs text-amber-300/80">Insira seu Usuário e AIO Key para carregar os sensores em tempo real.</p>
-                </div>
-            </div>
-            <button onclick="openSettingsModal()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold transition whitespace-nowrap">
-                Configurar Agora
-            </button>
-        </div>
-
-        <!-- SENSOR TELEMETRY CARDS (TOP SECTION) -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- DHT22 Temperature -->
-            <div class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-slate-600 transition">
-                <div class="flex items-center justify-between text-slate-400 mb-3">
-                    <span class="text-xs font-semibold tracking-wider uppercase text-slate-400">Temperatura (DHT22)</span>
-                    <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
-                        <i class="fa-solid fa-temperature-half"></i>
-                    </div>
-                </div>
-                <div class="flex items-baseline space-x-2">
-                    <span id="valTemp" class="text-3xl font-extrabold text-white">--</span>
-                    <span class="text-sm font-medium text-slate-400">°C</span>
-                </div>
-                <div class="mt-3 flex items-center justify-between text-xs border-t border-slate-700/50 pt-2.5">
-                    <span id="statusTemp" class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300">Aguardando</span>
-                    <span id="timeTemp" class="text-slate-500 text-[11px]">--:--</span>
-                </div>
+        <!-- SECTION 1: TOP - Real-Time Telemetry Cards -->
+        <section>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-emerald-400"></i> Telemetria em Tempo Real
+                </h2>
+                <span id="lastUpdatedText" class="text-xs text-slate-400">Última atualização: --:--:--</span>
             </div>
 
-            <!-- DHT22 Humidity -->
-            <div class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-slate-600 transition">
-                <div class="flex items-center justify-between text-slate-400 mb-3">
-                    <span class="text-xs font-semibold tracking-wider uppercase text-slate-400">Umidade (DHT22)</span>
-                    <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center">
-                        <i class="fa-solid fa-droplet"></i>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- Card 1: DHT22 Temperatura -->
+                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-emerald-500/40 transition-all duration-300">
+                    <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition text-emerald-400">
+                        <i class="fa-solid fa-temperature-high text-7xl"></i>
+                    </div>
+                    <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-3">
+                        <span>DHT22 Temperatura</span>
+                        <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400"><i class="fa-solid fa-temperature-half"></i></span>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span id="valDhtTemp" class="text-3xl font-bold tracking-tight text-white">--</span>
+                        <span class="text-lg font-medium text-slate-400">°C</span>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                        <span>Sensor de Ar</span>
+                        <span id="statusDhtTemp" class="text-emerald-400 font-medium">Normal</span>
                     </div>
                 </div>
-                <div class="flex items-baseline space-x-2">
-                    <span id="valUmid" class="text-3xl font-extrabold text-white">--</span>
-                    <span class="text-sm font-medium text-slate-400">%</span>
-                </div>
-                <div class="mt-3 flex items-center justify-between text-xs border-t border-slate-700/50 pt-2.5">
-                    <span id="statusUmid" class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300">Aguardando</span>
-                    <span id="timeUmid" class="text-slate-500 text-[11px]">--:--</span>
-                </div>
-            </div>
 
-            <!-- BMP180 Pressure -->
-            <div class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-slate-600 transition">
-                <div class="flex items-center justify-between text-slate-400 mb-3">
-                    <span class="text-xs font-semibold tracking-wider uppercase text-slate-400">Pressão Atmosférica</span>
-                    <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
-                        <i class="fa-solid fa-gauge-high"></i>
+                <!-- Card 2: DHT22 Umidade -->
+                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-blue-500/40 transition-all duration-300">
+                    <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition text-blue-400">
+                        <i class="fa-solid fa-droplet text-7xl"></i>
+                    </div>
+                    <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-3">
+                        <span>DHT22 Umidade</span>
+                        <span class="p-1.5 rounded-lg bg-blue-500/10 text-blue-400"><i class="fa-solid fa-water"></i></span>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span id="valDhtHum" class="text-3xl font-bold tracking-tight text-white">--</span>
+                        <span class="text-lg font-medium text-slate-400">%</span>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                        <span>Umidade Relativa</span>
+                        <span id="statusDhtHum" class="text-blue-400 font-medium">Adequada</span>
                     </div>
                 </div>
-                <div class="flex items-baseline space-x-2">
-                    <span id="valPress" class="text-3xl font-extrabold text-white">--</span>
-                    <span class="text-sm font-medium text-slate-400">hPa</span>
-                </div>
-                <div class="mt-3 flex items-center justify-between text-xs border-t border-slate-700/50 pt-2.5">
-                    <span id="statusPress" class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300">BMP180</span>
-                    <span id="timePress" class="text-slate-500 text-[11px]">--:--</span>
-                </div>
-            </div>
 
-            <!-- Luminosity Lux -->
-            <div class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 relative overflow-hidden shadow-lg hover:border-slate-600 transition">
-                <div class="flex items-center justify-between text-slate-400 mb-3">
-                    <span class="text-xs font-semibold tracking-wider uppercase text-slate-400">Luminosidade</span>
-                    <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
-                        <i class="fa-solid fa-sun"></i>
+                <!-- Card 3: BMP180 Pressão -->
+                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-purple-500/40 transition-all duration-300">
+                    <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition text-purple-400">
+                        <i class="fa-solid fa-gauge-high text-7xl"></i>
+                    </div>
+                    <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-3">
+                        <span>BMP180 Pressão</span>
+                        <span class="p-1.5 rounded-lg bg-purple-500/10 text-purple-400"><i class="fa-solid fa-compress"></i></span>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span id="valBmpPres" class="text-3xl font-bold tracking-tight text-white">--</span>
+                        <span class="text-lg font-medium text-slate-400">hPa</span>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                        <span>Pressão Atmosférica</span>
+                        <span id="statusBmpPres" class="text-purple-400 font-medium">Estável</span>
                     </div>
                 </div>
-                <div class="flex items-baseline space-x-2">
-                    <span id="valLux" class="text-3xl font-extrabold text-white">--</span>
-                    <span class="text-sm font-medium text-slate-400">Lux</span>
+
+                <!-- Card 4: Lux BH1750 -->
+                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-amber-500/40 transition-all duration-300">
+                    <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition text-amber-400">
+                        <i class="fa-solid fa-sun text-7xl"></i>
+                    </div>
+                    <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-3">
+                        <span>BH1750 Luminosidade</span>
+                        <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400"><i class="fa-solid fa-lightbulb"></i></span>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span id="valLux" class="text-3xl font-bold tracking-tight text-white">--</span>
+                        <span class="text-lg font-medium text-slate-400">Lux</span>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                        <span>Luminosidade Solar</span>
+                        <span id="statusLux" class="text-amber-400 font-medium">Ótima</span>
+                    </div>
                 </div>
-                <div class="mt-3 flex items-center justify-between text-xs border-t border-slate-700/50 pt-2.5">
-                    <span id="statusLux" class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300">Aguardando</span>
-                    <span id="timeLux" class="text-slate-500 text-[11px]">--:--</span>
-                </div>
+
             </div>
         </section>
 
-        <!-- HISTORICAL CHART SECTION -->
-        <section class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
-            <!-- Control Bar with Dark Pill Containers -->
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-700/60 pb-5">
+        <!-- SECTION 2: MIDDLE - Historical Chart -->
+        <section class="glass-card rounded-2xl p-5 lg:p-6 shadow-xl">
+            <!-- Header & Pill Controls -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
                 <div>
-                    <h2 class="text-base font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-chart-line text-emerald-400"></i> Histórico de Telemetria
+                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-emerald-400"></i> Histórico de Medições
                     </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Gráficos dinâmicos com agrupamento de tempo e auto-ajuste</p>
+                    <p class="text-xs text-slate-400">Análise temporal agrupada e dimensionada dinamicamente</p>
                 </div>
 
-                <!-- Pill Buttons Bar -->
-                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    <!-- Metric Selection Pills -->
-                    <div class="bg-slate-900/90 p-1 rounded-full border border-slate-700/80 shadow-inner flex items-center">
-                        <button onclick="setMetric('temp')" id="pill-metric-temp" class="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full transition cursor-pointer">
-                            Temp.
+                <!-- Pill Controls Toolbar -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Period Group Pills -->
+                    <div class="bg-slate-900/90 p-1 rounded-xl border border-slate-800 flex items-center gap-1">
+                        <button onclick="setChartPeriod('24h')" id="pillPeriod24h" class="pill-btn active px-3 py-1.5 text-xs font-medium rounded-lg hover:text-white transition">
+                            24 Horas
                         </button>
-                        <button onclick="setMetric('umid')" id="pill-metric-umid" class="px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer">
-                            Umidade
-                        </button>
-                        <button onclick="setMetric('press')" id="pill-metric-press" class="px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer">
-                            Pressão
-                        </button>
-                        <button onclick="setMetric('lux')" id="pill-metric-lux" class="px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer">
-                            Lux
+                        <button onclick="setChartPeriod('30d')" id="pillPeriod30d" class="pill-btn text-slate-400 px-3 py-1.5 text-xs font-medium rounded-lg hover:text-white transition">
+                            30 Dias
                         </button>
                     </div>
 
-                    <!-- Time Range Selection Pills -->
-                    <div class="bg-slate-900/90 p-1 rounded-full border border-slate-700/80 shadow-inner flex items-center">
-                        <button onclick="setTimeframe('24h')" id="pill-time-24h" class="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full transition cursor-pointer">
-                            24 Horas
+                    <!-- Metrics Group Pills -->
+                    <div class="bg-slate-900/90 p-1 rounded-xl border border-slate-800 flex flex-wrap items-center gap-1">
+                        <button onclick="setChartMetric('temp')" id="pillMetricTemp" class="pill-btn active px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5">
+                            <span>🌡️</span> <span>Temp.</span>
                         </button>
-                        <button onclick="setTimeframe('30d')" id="pill-time-30d" class="px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer">
-                            30 Dias
+                        <button onclick="setChartMetric('hum')" id="pillMetricHum" class="pill-btn text-slate-400 px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5">
+                            <span>💧</span> <span>Umidade</span>
+                        </button>
+                        <button onclick="setChartMetric('pres')" id="pillMetricPres" class="pill-btn text-slate-400 px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5">
+                            <span>📊</span> <span>Pressão</span>
+                        </button>
+                        <button onclick="setChartMetric('lux')" id="pillMetricLux" class="pill-btn text-slate-400 px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5">
+                            <span>☀️</span> <span>Lux</span>
                         </button>
                     </div>
                 </div>
             </div>
 
             <!-- Chart Canvas Container -->
-            <div class="relative w-full h-72 sm:h-80 md:h-96">
-                <canvas id="telemetryChart"></canvas>
-                <div id="chartLoadingOverlay" class="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center rounded-xl transition-opacity duration-300 hidden">
-                    <div class="flex items-center space-x-2 text-emerald-400 text-sm font-medium">
-                        <i class="fa-solid fa-circle-notch fa-spin text-lg"></i>
-                        <span>Carregando dados...</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dynamic Statistics Bar (Calculated strictly on available data) -->
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4 border-t border-slate-700/50 text-center">
-                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/40">
-                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Média</span>
-                    <span id="statAvg" class="text-sm font-bold text-slate-200">--</span>
-                </div>
-                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/40">
-                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Mínima</span>
-                    <span id="statMin" class="text-sm font-bold text-slate-200">--</span>
-                </div>
-                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/40">
-                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Máxima</span>
-                    <span id="statMax" class="text-sm font-bold text-slate-200">--</span>
-                </div>
-                <div class="bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/40">
-                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Amostras</span>
-                    <span id="statCount" class="text-sm font-bold text-slate-200">--</span>
-                </div>
-                <div class="col-span-2 sm:col-span-1 bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/40">
-                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Intervalo Disponível</span>
-                    <span id="statSpan" class="text-xs font-semibold text-emerald-400 truncate block">--</span>
+            <div class="relative w-full h-[320px] sm:h-[380px] pt-4">
+                <canvas id="historyChart"></canvas>
+                <div id="chartLoadingOverlay" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl transition-opacity duration-300 hidden">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-emerald-400 mb-2"></i>
+                    <span class="text-xs text-slate-300 font-medium">Carregando dados históricos...</span>
                 </div>
             </div>
         </section>
 
-        <!-- GITHUB PHOTO GALLERY SECTION (BOTTOM) -->
-        <section class="bg-slate-800/90 border border-slate-700/60 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
-            <!-- Gallery Header & Date Filter Controls -->
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-700/60 pb-5">
+        <!-- SECTION 3: BOTTOM - GitHub Photo Gallery -->
+        <section class="glass-card rounded-2xl p-5 lg:p-6 shadow-xl">
+            <!-- Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
                 <div>
-                    <h2 class="text-base font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-camera-retro text-emerald-400"></i> Galeria Visual da Estufa
+                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-camera text-emerald-400"></i> Galeria de Fotos da Estufa
                     </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Fotos capturadas automaticamente armazenadas no repositório GitHub</p>
+                    <p class="text-xs text-slate-400" id="photoSubText">Sincronizado diretamente do repositório GitHub</p>
                 </div>
-
-                <div class="flex items-center space-x-3 w-full sm:w-auto">
-                    <!-- Date Picker Filter -->
-                    <div class="relative w-full sm:w-auto">
-                        <input type="date" id="galleryDateFilter" onchange="filterGalleryByDate()" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none w-full">
-                    </div>
-                    <button onclick="clearGalleryDateFilter()" class="p-2 text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-700 rounded-lg transition whitespace-nowrap" title="Limpar Filtro">
-                        <i class="fa-solid fa-filter-circle-xmark"></i>
+                <div class="flex items-center gap-2">
+                    <span id="photoCountBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono">
+                        0 fotos
+                    </span>
+                    <button onclick="fetchGitHubPhotos()" class="p-2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="Recarregar Fotos">
+                        <i class="fa-solid fa-arrows-rotate"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Main Photo Display Container -->
-            <div class="relative bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden min-h-[300px] sm:min-h-[420px] flex items-center justify-center group">
-                <!-- Gallery Loader -->
-                <div id="galleryLoader" class="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex flex-col items-center justify-center space-y-3 z-10">
-                    <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-400"></i>
-                    <span class="text-xs text-slate-400">Buscando fotos do repositório GitHub...</span>
+            <!-- Toolbar Controls -->
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                
+                <!-- Date Filter Input -->
+                <div class="md:col-span-4 flex items-center gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+                    <i class="fa-regular fa-calendar text-emerald-400 pl-2 text-sm"></i>
+                    <label for="photoDatePicker" class="sr-only">Filtrar por data</label>
+                    <input type="date" id="photoDatePicker" onchange="filterPhotosByDate()" class="bg-transparent text-xs text-white focus:outline-none w-full cursor-pointer">
+                    <button onclick="clearDateFilter()" title="Limpar Filtro de Data" class="text-slate-400 hover:text-white px-2 text-xs">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
 
-                <!-- Gallery Empty State -->
-                <div id="galleryEmptyState" class="hidden flex flex-col items-center justify-center p-8 text-center space-y-3">
-                    <div class="w-12 h-12 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center text-xl">
-                        <i class="fa-regular fa-image"></i>
-                    </div>
-                    <p class="text-sm font-medium text-slate-300">Nenhuma foto encontrada</p>
-                    <p class="text-xs text-slate-500 max-w-sm">Verifique se as imagens estão salvas na pasta <code class="bg-slate-900 px-1.5 py-0.5 rounded text-emerald-400">/fotos</code> do seu repositório GitHub público.</p>
+                <!-- Dropdown Direct File Select -->
+                <div class="md:col-span-5 bg-slate-900/80 p-2 rounded-xl border border-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-image text-slate-400 pl-2 text-sm"></i>
+                    <label for="photoSelectDropdown" class="sr-only">Selecionar Foto</label>
+                    <select id="photoSelectDropdown" onchange="selectPhotoFromDropdown(this.value)" class="bg-transparent text-xs text-slate-200 focus:outline-none w-full cursor-pointer">
+                        <option value="" class="bg-slate-900">Carregando lista de fotos...</option>
+                    </select>
                 </div>
 
-                <!-- Main Active Image (Object contain inside framed dark container) -->
-                <img id="mainGalleryImg" src="" alt="Foto da Estufa" class="hidden w-full h-[320px] sm:h-[460px] object-contain transition duration-300">
-
-                <!-- Navigation Overlay Arrows -->
-                <button id="btnPrevPhoto" onclick="prevPhoto()" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/80 hover:bg-emerald-600 text-white flex items-center justify-center border border-slate-700 transition opacity-80 hover:opacity-100 cursor-pointer shadow-lg">
-                    <i class="fa-solid fa-chevron-left"></i>
-                </button>
-                <button id="btnNextPhoto" onclick="nextPhoto()" class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/80 hover:bg-emerald-600 text-white flex items-center justify-center border border-slate-700 transition opacity-80 hover:opacity-100 cursor-pointer shadow-lg">
-                    <i class="fa-solid fa-chevron-right"></i>
-                </button>
-
-                <!-- Fullscreen Zoom Button -->
-                <button onclick="openLightbox()" class="absolute top-3 right-3 p-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 transition text-xs flex items-center gap-1.5 shadow">
-                    <i class="fa-solid fa-expand"></i>
-                    <span class="hidden sm:inline">Ampliar</span>
-                </button>
-
-                <!-- Photo Counter & Info Badge -->
-                <div id="photoInfoBadge" class="absolute bottom-3 left-3 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 flex items-center gap-3">
-                    <span id="photoIndexCounter">0 / 0</span>
-                    <span id="photoFilename" class="text-emerald-400 font-mono text-[11px]">--</span>
+                <!-- Navigation Buttons & Fullscreen -->
+                <div class="md:col-span-3 flex items-center justify-end gap-2">
+                    <button onclick="navigatePhoto(-1)" id="btnPrevPhoto" class="flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium text-slate-200 rounded-xl border border-slate-700 transition flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+                    <button onclick="navigatePhoto(1)" id="btnNextPhoto" class="flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium text-slate-200 rounded-xl border border-slate-700 transition flex items-center justify-center gap-1">
+                        Próxima <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <button onclick="openZoomModal()" id="btnZoomPhoto" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition flex items-center justify-center" title="Ampliar Foto">
+                        <i class="fa-solid fa-expand text-sm"></i>
+                    </button>
                 </div>
             </div>
 
-            <!-- Thumbnail Carousel Bar -->
-            <div id="thumbnailContainer" class="flex items-center space-x-3 overflow-x-auto pb-2 pt-1 px-1 scroll-smooth">
-                <!-- Dynamic thumbnails will be injected here -->
+            <!-- Main Photo Display Box -->
+            <div class="mt-4 relative rounded-xl overflow-hidden border border-slate-800 image-container min-h-[350px] sm:min-h-[480px] flex items-center justify-center">
+                
+                <!-- Active Image View -->
+                <img id="mainPhotoImage" src="" alt="Foto da Estufa" class="max-h-[500px] w-full h-auto object-contain transition-opacity duration-300 hidden" onload="onMainPhotoLoaded()" onerror="onMainPhotoError()">
+                
+                <!-- Loading State -->
+                <div id="photoLoadingState" class="flex flex-col items-center justify-center p-8 text-center">
+                    <i class="fa-solid fa-spinner fa-spin text-4xl text-emerald-400 mb-3"></i>
+                    <p class="text-sm font-medium text-slate-300">Conectando à API do GitHub...</p>
+                    <p class="text-xs text-slate-500 mt-1">Carregando imagens do repositório</p>
+                </div>
+
+                <!-- Error / Empty GitHub State (404 or Folder Empty) -->
+                <div id="photoErrorState" class="hidden flex-col items-center justify-center p-8 text-center max-w-md">
+                    <div class="p-3 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20 mb-3">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-white mb-1" id="photoErrorTitle">Nenhuma foto encontrada</h3>
+                    <p class="text-xs text-slate-400 mb-4" id="photoErrorMessage">Não foi possível localizar imagens na pasta/repositório informado ou limite de requisições do GitHub atingido.</p>
+                    <button onclick="openSettingsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 rounded-xl text-xs font-medium transition">
+                        <i class="fa-solid fa-sliders mr-1"></i> Verificar Configurações do GitHub
+                    </button>
+                </div>
+
+                <!-- Floating Caption Overlay -->
+                <div id="photoCaptionOverlay" class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/90 via-slate-950/60 to-transparent p-4 flex items-end justify-between hidden">
+                    <div>
+                        <p id="photoFileNameText" class="text-xs font-semibold text-white font-mono"></p>
+                        <p id="photoMetaText" class="text-[11px] text-slate-400 mt-0.5"></p>
+                    </div>
+                    <span id="photoIndexBadge" class="text-[10px] bg-slate-900/80 px-2 py-1 rounded text-slate-300 font-mono border border-slate-800">1 / 1</span>
+                </div>
+            </div>
+
+            <!-- Scrollable Thumbnail Strip -->
+            <div class="mt-4">
+                <div id="thumbnailStrip" class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                    <!-- Thumbnails generated dynamically -->
+                </div>
             </div>
         </section>
 
     </main>
 
-    <!-- FOOTER -->
-    <footer class="border-t border-slate-800 bg-slate-950 py-4 text-center text-xs text-slate-500">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p>Painel da Estufa Agrícola &copy; Monitoramento IOT</p>
-            <p class="text-[11px] text-slate-600">Conectado via Adafruit IO REST API & GitHub Content API</p>
-        </div>
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-950/50 py-4 px-4 text-center text-xs text-slate-500 mt-8">
+        <p>Painel da Estufa Agrícola &copy; 2026 — Telemetria Adafruit IO &amp; Imagens GitHub</p>
     </footer>
 
-    <!-- SETTINGS MODAL -->
-    <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-5 relative">
-            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+    <!-- MODAL 1: Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-card w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-700 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
                 <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-emerald-400"></i> Configurações de Conectividade
+                    <i class="fa-solid fa-sliders text-emerald-400"></i> Configurações das APIs
                 </h3>
-                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white transition">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <form id="settingsForm" onsubmit="saveSettings(event)" class="space-y-4">
-                <!-- Adafruit IO Section -->
+            <form onsubmit="saveSettings(event)" class="mt-4 space-y-4">
+                <!-- Adafruit IO Credentials -->
+                <div class="space-y-3 pt-1">
+                    <h4 class="text-xs font-semibold text-emerald-400 tracking-wider uppercase flex items-center gap-1.5">
+                        <i class="fa-solid fa-cloud"></i> Adafruit IO (Telemetria)
+                    </h4>
+                    <div>
+                        <label for="cfgAioUsername" class="block text-xs font-medium text-slate-300 mb-1">AIO Username</label>
+                        <input type="text" id="cfgAioUsername" placeholder="Ex: seunome" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
+                    </div>
+                    <div>
+                        <label for="cfgAioKey" class="block text-xs font-medium text-slate-300 mb-1">AIO Key</label>
+                        <input type="password" id="cfgAioKey" placeholder="aio_xxxxxxxxxxxxxxxxx" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
+                    </div>
+
+                    <!-- Feed Names Sub-Section -->
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                            <label for="cfgFeedDhtTemp" class="block text-[11px] text-slate-400 mb-0.5">Feed DHT Temp</label>
+                            <input type="text" id="cfgFeedDhtTemp" value="dht22-temp" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                        </div>
+                        <div>
+                            <label for="cfgFeedDhtHum" class="block text-[11px] text-slate-400 mb-0.5">Feed DHT Umidade</label>
+                            <input type="text" id="cfgFeedDhtHum" value="dht22-umidade" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                        </div>
+                        <div>
+                            <label for="cfgFeedBmpPres" class="block text-[11px] text-slate-400 mb-0.5">Feed BMP Pressão</label>
+                            <input type="text" id="cfgFeedBmpPres" value="bmp180-pressao" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                        </div>
+                        <div>
+                            <label for="cfgFeedLux" class="block text-[11px] text-slate-400 mb-0.5">Feed BH1750 Lux</label>
+                            <input type="text" id="cfgFeedLux" value="lux-bh1750" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-800 my-2">
+
+                <!-- GitHub Repository Config -->
                 <div class="space-y-3">
-                    <h4 class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Adafruit IO (Sensores)</h4>
-                    
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Usuário Adafruit IO</label>
-                        <input type="text" id="inputAioUsername" required placeholder="ex: seu_usuario" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">AIO Key (Chave API Secreta)</label>
-                        <div class="relative">
-                            <input type="password" id="inputAioKey" required placeholder="aio_..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none pr-10">
-                            <button type="button" onclick="toggleKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs">
-                                <i class="fa-regular fa-eye" id="eyeIcon"></i>
-                            </button>
+                    <h4 class="text-xs font-semibold text-emerald-400 tracking-wider uppercase flex items-center gap-1.5">
+                        <i class="fa-brands fa-github"></i> GitHub (Galeria de Fotos)
+                    </h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="cfgGhUser" class="block text-xs font-medium text-slate-300 mb-1">Usuário GitHub</label>
+                            <input type="text" id="cfgGhUser" value="Gui-Leite" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
                         </div>
-                        <p class="text-[10px] text-slate-400 mt-1">Sua chave é gravada estritamente no <code class="text-emerald-400">localStorage</code> do seu navegador.</p>
+                        <div>
+                            <label for="cfgGhRepo" class="block text-xs font-medium text-slate-300 mb-1">Repositório</label>
+                            <input type="text" id="cfgGhRepo" value="painel-estufa" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label for="cfgGhFolder" class="block text-xs font-medium text-slate-300 mb-1">Pasta das Fotos</label>
+                            <input type="text" id="cfgGhFolder" value="fotos" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
+                        </div>
+                        <div>
+                            <label for="cfgGhBranch" class="block text-xs font-medium text-slate-300 mb-1">Branch</label>
+                            <input type="text" id="cfgGhBranch" value="main" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="cfgGhToken" class="block text-xs font-medium text-slate-300 mb-1">
+                            GitHub Token <span class="text-slate-500 font-normal">(Opcional - evita limites de API)</span>
+                        </label>
+                        <input type="password" id="cfgGhToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none">
                     </div>
                 </div>
 
-                <!-- GitHub Section -->
-                <div class="space-y-3 pt-2 border-t border-slate-700">
-                    <div class="flex items-center justify-between">
-                        <h4 class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">GitHub (Galeria de Fotos)</h4>
-                        <button type="button" onclick="autoDetectGitHubRepo()" class="text-[11px] text-sky-400 hover:underline">
-                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Detectar URL
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">Usuário GitHub</label>
-                            <input type="text" id="inputGhUser" required placeholder="ex: usuario" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1">Repositório</label>
-                            <input type="text" id="inputGhRepo" required placeholder="ex: estufa-agricola" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Form Buttons -->
-                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-700">
-                    <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition">
-                        Salvar Configurações
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 text-xs text-slate-400 hover:text-white">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl text-xs shadow-lg shadow-emerald-900/30 transition">
+                        Salvar e Atualizar
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- LIGHTBOX MODAL -->
-    <div id="lightboxModal" class="fixed inset-0 z-50 bg-black/95 hidden flex flex-col items-center justify-between p-4">
-        <div class="w-full flex items-center justify-between text-white z-10 px-4 py-2">
-            <span id="lightboxTitle" class="text-xs font-mono text-emerald-400">--</span>
-            <button onclick="closeLightbox()" class="text-slate-400 hover:text-white p-2 text-xl">
+    <!-- MODAL 2: Fullscreen Photo Zoom Modal -->
+    <div id="zoomModal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-between p-4 hidden">
+        <div class="w-full flex items-center justify-between text-white max-w-7xl">
+            <span id="zoomFileName" class="text-xs font-mono text-slate-300">Foto em Alta Resolução</span>
+            <button onclick="closeZoomModal()" class="p-2 text-slate-400 hover:text-white text-xl">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
-
-        <div class="relative flex-grow w-full flex items-center justify-center overflow-hidden p-2">
-            <img id="lightboxImg" src="" alt="Zoom Foto" class="max-h-full max-w-full object-contain transition-transform duration-200">
+        <div class="flex-grow w-full flex items-center justify-center my-2 overflow-hidden">
+            <img id="zoomImage" src="" alt="Foto Ampliada" class="max-h-full max-w-full object-contain rounded-lg shadow-2xl">
         </div>
-
-        <div class="flex items-center space-x-4 py-3 z-10">
-            <button onclick="zoomInLightbox()" class="p-2.5 rounded-full bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 text-xs">
-                <i class="fa-solid fa-magnifying-glass-plus"></i> Zoom +
-            </button>
-            <button onclick="resetLightboxZoom()" class="p-2.5 rounded-full bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 text-xs">
-                Resetar
-            </button>
-            <button onclick="zoomOutLightbox()" class="p-2.5 rounded-full bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 text-xs">
-                <i class="fa-solid fa-magnifying-glass-minus"></i> Zoom -
-            </button>
+        <div class="text-center text-xs text-slate-400 py-1 font-mono">
+            Modo de Visualização Expandida
         </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
-    <script>
-        // Global Feed Mapping Keys
-        const FEED_KEYS = {
-            temp: 'dht22.temperaturadht22',
-            umid: 'dht22.umidadedht22',
-            press: 'bmp180.pressaobmp',
-            lux: 'luminosidade.lux'
-        };
+    <!-- Toast Notification Box -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-        // App State
-        let config = {
+    <script>
+        // Default Configuration Constants
+        const DEFAULT_CONFIG = {
             aioUsername: '',
             aioKey: '',
-            ghUser: '',
-            ghRepo: ''
+            feedDhtTemp: 'dht22-temp',
+            feedDhtHum: 'dht22-umidade',
+            feedBmpPres: 'bmp180-pressao',
+            feedLux: 'lux-bh1750',
+            ghUser: 'Gui-Leite',
+            ghRepo: 'painel-estufa',
+            ghFolder: 'fotos',
+            ghBranch: 'main',
+            ghToken: ''
         };
 
-        let currentMetric = 'temp'; // 'temp', 'umid', 'press', 'lux'
-        let currentTimeframe = '24h'; // '24h', '30d'
-        let telemetryChart = null;
-
-        // Gallery State
-        let galleryPhotos = [];
-        let filteredPhotos = [];
+        // Application State
+        let appConfig = { ...DEFAULT_CONFIG };
+        let historyChart = null;
+        let currentChartPeriod = '24h'; // '24h' or '30d'
+        let currentChartMetric = 'temp'; // 'temp', 'hum', 'pres', 'lux'
         let currentPhotoIndex = 0;
-        let lightboxZoomScale = 1;
+        let photoList = []; // Array of photo objects from GitHub
+        let filteredPhotoList = []; // Array after date filtering
+        let telemetryData = {
+            temp: [],
+            hum: [],
+            pres: [],
+            lux: []
+        };
 
-        window.addEventListener('DOMContentLoaded', () => {
+        window.onload = function() {
             loadConfigFromStorage();
             initChart();
-            autoDetectGitHubRepo();
             
-            if (config.aioUsername && config.aioKey) {
-                updateConnectionStatus('connected');
-                refreshAllData();
-            } else {
-                updateConnectionStatus('configured_needed');
-                document.getElementById('configWarningBanner').classList.remove('hidden');
-                // Open settings automatically on first load if missing
+            // Check if credentials exist
+            if (!appConfig.aioUsername || !appConfig.aioKey) {
+                showToast('Por favor, configure suas credenciais do Adafruit IO nas Configurações.', 'warning');
                 openSettingsModal();
+            } else {
+                loadAllData();
             }
 
-            if (config.ghUser && config.ghRepo) {
-                fetchGitHubPhotos();
-            }
-        });
+            // Auto refresh telemetry every 60 seconds
+            setInterval(() => {
+                if (appConfig.aioUsername && appConfig.aioKey) {
+                    fetchRealTimeTelemetry();
+                }
+            }, 60000);
+        };
 
-        // Load credentials from localStorage
         function loadConfigFromStorage() {
-            config.aioUsername = localStorage.getItem('estufa_aio_user') || '';
-            config.aioKey = localStorage.getItem('estufa_aio_key') || '';
-            config.ghUser = localStorage.getItem('estufa_gh_user') || '';
-            config.ghRepo = localStorage.getItem('estufa_gh_repo') || '';
-
-            document.getElementById('inputAioUsername').value = config.aioUsername;
-            document.getElementById('inputAioKey').value = config.aioKey;
-            document.getElementById('inputGhUser').value = config.ghUser;
-            document.getElementById('inputGhRepo').value = config.ghRepo;
+            const stored = localStorage.getItem('estufa_app_config');
+            if (stored) {
+                try {
+                    appConfig = { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
+                } catch(e) {
+                    console.error('Erro ao ler localStorage', e);
+                }
+            }
+            // Populate settings modal fields
+            document.getElementById('cfgAioUsername').value = appConfig.aioUsername || '';
+            document.getElementById('cfgAioKey').value = appConfig.aioKey || '';
+            document.getElementById('cfgFeedDhtTemp').value = appConfig.feedDhtTemp || 'dht22-temp';
+            document.getElementById('cfgFeedDhtHum').value = appConfig.feedDhtHum || 'dht22-umidade';
+            document.getElementById('cfgFeedBmpPres').value = appConfig.feedBmpPres || 'bmp180-pressao';
+            document.getElementById('cfgFeedLux').value = appConfig.feedLux || 'lux-bh1750';
+            document.getElementById('cfgGhUser').value = appConfig.ghUser || 'Gui-Leite';
+            document.getElementById('cfgGhRepo').value = appConfig.ghRepo || 'painel-estufa';
+            document.getElementById('cfgGhFolder').value = appConfig.ghFolder || 'fotos';
+            document.getElementById('cfgGhBranch').value = appConfig.ghBranch || 'main';
+            document.getElementById('cfgGhToken').value = appConfig.ghToken || '';
         }
 
-        function updateConnectionStatus(status) {
-            const badge = document.getElementById('liveStatusBadge');
-            const warningBanner = document.getElementById('configWarningBanner');
+        function saveSettings(event) {
+            event.preventDefault();
+            appConfig.aioUsername = document.getElementById('cfgAioUsername').value.trim();
+            appConfig.aioKey = document.getElementById('cfgAioKey').value.trim();
+            appConfig.feedDhtTemp = document.getElementById('cfgFeedDhtTemp').value.trim() || 'dht22-temp';
+            appConfig.feedDhtHum = document.getElementById('cfgFeedDhtHum').value.trim() || 'dht22-umidade';
+            appConfig.feedBmpPres = document.getElementById('cfgFeedBmpPres').value.trim() || 'bmp180-pressao';
+            appConfig.feedLux = document.getElementById('cfgFeedLux').value.trim() || 'lux-bh1750';
+            appConfig.ghUser = document.getElementById('cfgGhUser').value.trim() || 'Gui-Leite';
+            appConfig.ghRepo = document.getElementById('cfgGhRepo').value.trim() || 'painel-estufa';
+            appConfig.ghFolder = document.getElementById('cfgGhFolder').value.trim() || 'fotos';
+            appConfig.ghBranch = document.getElementById('cfgGhBranch').value.trim() || 'main';
+            appConfig.ghToken = document.getElementById('cfgGhToken').value.trim();
 
-            if (status === 'connected') {
-                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 pulse-emerald"></span> Conectado';
-                warningBanner.classList.add('hidden');
-            } else {
-                badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20';
-                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5"></span> Configuração Pendente';
-            }
+            localStorage.setItem('estufa_app_config', JSON.stringify(appConfig));
+            closeSettingsModal();
+            showToast('Configurações salvas com sucesso!', 'success');
+            loadAllData();
         }
 
         function openSettingsModal() {
@@ -545,553 +591,512 @@
             document.getElementById('settingsModal').classList.add('hidden');
         }
 
-        function toggleKeyVisibility() {
-            const keyInput = document.getElementById('inputAioKey');
-            const eyeIcon = document.getElementById('eyeIcon');
-            if (keyInput.type === 'password') {
-                keyInput.type = 'text';
-                eyeIcon.className = 'fa-regular fa-eye-slash';
-            } else {
-                keyInput.type = 'password';
-                eyeIcon.className = 'fa-regular fa-eye';
-            }
-        }
-
-        function autoDetectGitHubRepo() {
-            const hostname = window.location.hostname;
-            const pathname = window.location.pathname;
-
-            if (hostname.includes('github.io')) {
-                const parts = hostname.split('.');
-                const user = parts[0];
-                const pathParts = pathname.split('/').filter(p => p.length > 0);
-                const repo = pathParts.length > 0 ? pathParts[0] : '';
-
-                if (user && !document.getElementById('inputGhUser').value) {
-                    document.getElementById('inputGhUser').value = user;
-                }
-                if (repo && !document.getElementById('inputGhRepo').value) {
-                    document.getElementById('inputGhRepo').value = repo;
-                }
-            }
-        }
-
-        function saveSettings(e) {
-            e.preventDefault();
-            config.aioUsername = document.getElementById('inputAioUsername').value.trim();
-            config.aioKey = document.getElementById('inputAioKey').value.trim();
-            config.ghUser = document.getElementById('inputGhUser').value.trim();
-            config.ghRepo = document.getElementById('inputGhRepo').value.trim();
-
-            localStorage.setItem('estufa_aio_user', config.aioUsername);
-            localStorage.setItem('estufa_aio_key', config.aioKey);
-            localStorage.setItem('estufa_gh_user', config.ghUser);
-            localStorage.setItem('estufa_gh_repo', config.ghRepo);
-
-            closeSettingsModal();
-            updateConnectionStatus('connected');
-            refreshAllData();
-            fetchGitHubPhotos();
-        }
-
-        async function refreshAllData() {
+        async function loadAllData() {
             const refreshIcon = document.getElementById('refreshIcon');
-            refreshIcon.classList.add('fa-spin');
+            if (refreshIcon) refreshIcon.classList.add('fa-spin');
+            
+            await Promise.allSettled([
+                fetchRealTimeTelemetry(),
+                fetchChartHistoryData(),
+                fetchGitHubPhotos()
+            ]);
 
-            if (!config.aioUsername || !config.aioKey) {
-                refreshIcon.classList.remove('fa-spin');
-                return;
+            if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+        }
+
+        async function fetchRealTimeTelemetry() {
+            if (!appConfig.aioUsername || !appConfig.aioKey) return;
+
+            const feeds = [
+                { id: 'valDhtTemp', key: appConfig.feedDhtTemp, decimals: 1 },
+                { id: 'valDhtHum', key: appConfig.feedDhtHum, decimals: 1 },
+                { id: 'valBmpPres', key: appConfig.feedBmpPres, decimals: 0 },
+                { id: 'valLux', key: appConfig.feedLux, decimals: 0 }
+            ];
+
+            const headers = { 'X-AIO-Key': appConfig.aioKey };
+
+            let hasSuccess = false;
+
+            for (const feed of feeds) {
+                try {
+                    const res = await fetch(`https://io.adafruit.com/api/v2/${appConfig.aioUsername}/feeds/${feed.key}/data/last`, { headers });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const val = parseFloat(data.value);
+                        if (!isNaN(val)) {
+                            document.getElementById(feed.id).innerText = val.toFixed(feed.decimals);
+                            hasSuccess = true;
+                        }
+                    } else {
+                        document.getElementById(feed.id).innerText = '--';
+                    }
+                } catch(e) {
+                    console.error(`Erro ao buscar feed ${feed.key}:`, e);
+                    document.getElementById(feed.id).innerText = '--';
+                }
             }
 
-            try {
-                // Fetch last data point for each sensor feed in parallel
-                await Promise.all([
-                    fetchFeedLast('temp', FEED_KEYS.temp, 'valTemp', 'timeTemp', 'statusTemp', '°C'),
-                    fetchFeedLast('umid', FEED_KEYS.umid, 'valUmid', 'timeUmid', 'statusUmid', '%'),
-                    fetchFeedLast('press', FEED_KEYS.press, 'valPress', 'timePress', 'statusPress', 'hPa'),
-                    fetchFeedLast('lux', FEED_KEYS.lux, 'valLux', 'timeLux', 'statusLux', 'Lux')
-                ]);
-
-                // Update Chart Data
-                await fetchHistoricalChartData();
-            } catch (err) {
-                console.error("Erro ao atualizar dados:", err);
-            } finally {
-                refreshIcon.classList.remove('fa-spin');
+            if (hasSuccess) {
+                const now = new Date();
+                document.getElementById('lastUpdatedText').innerText = `Última atualização: ${now.toLocaleTimeString()}`;
+                document.getElementById('syncStatusBadge').className = "text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-normal";
+                document.getElementById('syncStatusBadge').innerHTML = '<i class="fa-solid fa-circle text-[8px] animate-pulse mr-1"></i> Conectado';
+            } else {
+                document.getElementById('syncStatusBadge').className = "text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-normal";
+                document.getElementById('syncStatusBadge').innerHTML = '<i class="fa-solid fa-circle text-[8px] mr-1"></i> Sem Dados';
             }
         }
 
-        async function fetchFeedLast(type, feedKey, valElId, timeElId, statusElId, unit) {
+        async function fetchChartHistoryData() {
+            if (!appConfig.aioUsername || !appConfig.aioKey) return;
+
+            const overlay = document.getElementById('chartLoadingOverlay');
+            if (overlay) overlay.classList.remove('hidden');
+
+            const headers = { 'X-AIO-Key': appConfig.aioKey };
+            const metricMap = {
+                temp: appConfig.feedDhtTemp,
+                hum: appConfig.feedDhtHum,
+                pres: appConfig.feedBmpPres,
+                lux: appConfig.feedLux
+            };
+
+            // Limit data requested based on period
+            const limit = currentChartPeriod === '24h' ? 300 : 1000;
+
             try {
-                const url = `https://io.adafruit.com/api/v2/${config.aioUsername}/feeds/${feedKey}/data/last`;
-                const response = await fetch(url, {
-                    headers: { 'X-AIO-Key': config.aioKey }
-                });
+                const activeFeedKey = metricMap[currentChartMetric];
+                const res = await fetch(`https://io.adafruit.com/api/v2/${appConfig.aioUsername}/feeds/${activeFeedKey}/data?limit=${limit}`, { headers });
+                
+                if (res.ok) {
+                    const rawData = await res.json();
+                    
+                    // Parse and order data chronologically
+                    let parsedData = rawData.map(item => ({
+                        x: new Date(item.created_at),
+                        y: parseFloat(item.value)
+                    })).filter(pt => !isNaN(pt.y) && !isNaN(pt.x.getTime()));
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    parsedData.sort((a, b) => a.x - b.x);
 
-                const data = await response.json();
-                const rawVal = parseFloat(data.value);
-                const date = new Date(data.created_at);
+                    // Grouping logic based on interval requirements
+                    // 24 Hours -> 5 minutes buckets (300,000 ms)
+                    // 30 Days -> 30 minutes buckets (1,800,000 ms)
+                    const bucketSizeMs = currentChartPeriod === '24h' ? (5 * 60 * 1000) : (30 * 60 * 1000);
+                    const groupedData = groupDataByTimeBucket(parsedData, bucketSizeMs);
 
-                document.getElementById(valElId).innerText = isNaN(rawVal) ? '--' : rawVal.toFixed(1);
-                document.getElementById(timeElId).innerText = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                // Status Badge logic based on sensible greenhouse ranges
-                const statusEl = document.getElementById(statusElId);
-                if (type === 'temp') {
-                    if (rawVal >= 18 && rawVal <= 30) {
-                        statusEl.className = 'px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
-                        statusEl.innerText = 'Ideal';
-                    } else {
-                        statusEl.className = 'px-2 py-0.5 rounded text-[10px] font-medium bg-rose-500/20 text-rose-300 border border-rose-500/30';
-                        statusEl.innerText = 'Atenção';
-                    }
-                } else if (type === 'umid') {
-                    if (rawVal >= 50 && rawVal <= 85) {
-                        statusEl.className = 'px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
-                        statusEl.innerText = 'Ideal';
-                    } else {
-                        statusEl.className = 'px-2 py-0.5 rounded text-[10px] font-medium bg-sky-500/20 text-sky-300 border border-sky-500/30';
-                        statusEl.innerText = 'Aviso';
-                    }
+                    updateChartData(groupedData);
                 } else {
-                    statusEl.className = 'px-2 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300';
-                    statusEl.innerText = 'Ativo';
+                    updateChartData([]);
                 }
-            } catch (err) {
-                console.warn(`Erro no feed ${feedKey}:`, err);
-                document.getElementById(valElId).innerText = '--';
-                document.getElementById(statusElId).innerText = 'Erro API';
+            } catch(e) {
+                console.error('Erro ao buscar histórico do gráfico:', e);
+                updateChartData([]);
+            } finally {
+                if (overlay) overlay.classList.add('hidden');
             }
+        }
+
+        function groupDataByTimeBucket(dataPoints, bucketSizeMs) {
+            if (!dataPoints || dataPoints.length === 0) return [];
+
+            const buckets = {};
+            dataPoints.forEach(pt => {
+                const bucketTimestamp = Math.floor(pt.x.getTime() / bucketSizeMs) * bucketSizeMs;
+                if (!buckets[bucketTimestamp]) {
+                    buckets[bucketTimestamp] = { sum: 0, count: 0 };
+                }
+                buckets[bucketTimestamp].sum += pt.y;
+                buckets[bucketTimestamp].count += 1;
+            });
+
+            const result = Object.keys(buckets).map(ts => ({
+                x: new Date(parseInt(ts)),
+                y: parseFloat((buckets[ts].sum / buckets[ts].count).toFixed(2))
+            }));
+
+            result.sort((a, b) => a.x - b.x);
+            return result;
         }
 
         function initChart() {
-            const ctx = document.getElementById('telemetryChart').getContext('2d');
+            const ctx = document.getElementById('historyChart').getContext('2d');
             
-            telemetryChart = new Chart(ctx, {
+            historyChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: [],
                     datasets: [{
-                        label: 'Valor',
+                        label: 'Medição',
                         data: [],
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.12)',
                         borderWidth: 2,
+                        pointRadius: 2.5,
+                        pointHoverRadius: 5,
                         fill: true,
-                        tension: 0.3,
-                        pointRadius: 3,
-                        pointHoverRadius: 6,
-                        pointBackgroundColor: '#10b981'
+                        tension: 0.3
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: '#0f172a',
-                            titleColor: '#f8fafc',
-                            bodyColor: '#34d399',
-                            borderColor: '#334155',
-                            borderWidth: 1,
-                            padding: 10,
-                            displayColors: false,
-                            callbacks: {
-                                label: function(context) {
-                                    return `Valor: ${context.parsed.y.toFixed(2)}`;
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                tooltipFormat: 'dd/MM/yyyy HH:mm',
+                                displayFormats: {
+                                    minute: 'HH:mm',
+                                    hour: 'HH:mm',
+                                    day: 'dd/MM'
                                 }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 10 }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 10 }
                             }
                         }
                     },
-                    scales: {
-                        x: {
-                            grid: { color: 'rgba(51, 65, 85, 0.3)' },
-                            ticks: { color: '#94a3b8', font: { size: 11 }, maxTicksLimit: 8 }
-                        },
-                        y: {
-                            grid: { color: 'rgba(51, 65, 85, 0.4)' },
-                            ticks: { color: '#94a3b8', font: { size: 11 } }
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleColor: '#e2e8f0',
+                            bodyColor: '#10b981',
+                            borderColor: '#334155',
+                            borderWidth: 1,
+                            padding: 10,
+                            displayColors: false
                         }
                     }
                 }
             });
         }
 
-        function setMetric(metric) {
-            currentMetric = metric;
-            // Update UI pills for metrics
-            ['temp', 'umid', 'press', 'lux'].forEach(m => {
-                const btn = document.getElementById(`pill-metric-${m}`);
-                if (m === metric) {
-                    btn.className = 'px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full transition cursor-pointer shadow-sm';
-                } else {
-                    btn.className = 'px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer';
-                }
-            });
-            fetchHistoricalChartData();
+        function updateChartData(dataset) {
+            if (!historyChart) return;
+
+            const metricConfigs = {
+                temp: { label: 'Temperatura (°C)', color: '#059669', bg: 'rgba(5, 150, 105, 0.15)' },
+                hum: { label: 'Umidade (%)', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' },
+                pres: { label: 'Pressão (hPa)', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)' },
+                lux: { label: 'Luminosidade (Lux)', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' }
+            };
+
+            const cfg = metricConfigs[currentChartMetric] || metricConfigs.temp;
+
+            historyChart.data.datasets[0].label = cfg.label;
+            historyChart.data.datasets[0].borderColor = cfg.color;
+            historyChart.data.datasets[0].backgroundColor = cfg.bg;
+            historyChart.data.datasets[0].data = dataset;
+
+            // Auto Dynamic Scale: Chart.js automatically fits the bounds based on dataset x-values
+            historyChart.options.scales.x.time.unit = currentChartPeriod === '24h' ? 'hour' : 'day';
+            historyChart.update('none');
         }
 
-        function setTimeframe(tf) {
-            currentTimeframe = tf;
-            // Update UI pills for timeframe
-            ['24h', '30d'].forEach(t => {
-                const btn = document.getElementById(`pill-time-${t}`);
-                if (t === tf) {
-                    btn.className = 'px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-full transition cursor-pointer shadow-sm';
-                } else {
-                    btn.className = 'px-3.5 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-full transition cursor-pointer';
-                }
-            });
-            fetchHistoricalChartData();
+        function setChartPeriod(period) {
+            currentChartPeriod = period;
+            document.getElementById('pillPeriod24h').classList.toggle('active', period === '24h');
+            document.getElementById('pillPeriod24h').classList.toggle('text-slate-400', period !== '24h');
+            document.getElementById('pillPeriod30d').classList.toggle('active', period === '30d');
+            document.getElementById('pillPeriod30d').classList.toggle('text-slate-400', period !== '30d');
+            
+            fetchChartHistoryData();
         }
 
-        async function fetchHistoricalChartData() {
-            if (!config.aioUsername || !config.aioKey) return;
-
-            const loader = document.getElementById('chartLoadingOverlay');
-            loader.classList.remove('hidden');
-
-            const feedKey = FEED_KEYS[currentMetric];
-            try {
-                // Fetch up to 1000 data points from Adafruit IO
-                const url = `https://io.adafruit.com/api/v2/${config.aioUsername}/feeds/${feedKey}/data?limit=1000`;
-                const response = await fetch(url, {
-                    headers: { 'X-AIO-Key': config.aioKey }
-                });
-
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                const rawData = await response.json();
-                
-                if (!rawData || rawData.length === 0) {
-                    displayEmptyChartState();
-                    return;
-                }
-
-                // Process and sort raw data chronologically (oldest to newest)
-                const parsedPoints = rawData.map(item => ({
-                    timestamp: new Date(item.created_at).getTime(),
-                    value: parseFloat(item.value)
-                })).filter(p => !isNaN(p.value) && !isNaN(p.timestamp))
-                  .sort((a, b) => a.timestamp - b.timestamp);
-
-                if (parsedPoints.length === 0) {
-                    displayEmptyChartState();
-                    return;
-                }
-
-                // AUTO-ADJUST TO AVAILABLE DATA BOUNDS:
-                // Oldest available timestamp (T_min) to latest timestamp (T_max)
-                const tMin = parsedPoints[0].timestamp;
-                const tMax = parsedPoints[parsedPoints.length - 1].timestamp;
-
-                // Define bucket interval size based on user timeframe selection:
-                // 24 Horas -> 5 minutos (300.000 ms)
-                // 30 Dias  -> 30 minutos (1.800.000 ms)
-                const intervalMs = (currentTimeframe === '24h') ? (5 * 60 * 1000) : (30 * 60 * 1000);
-
-                // Group points into dynamic time buckets spanning STRICTLY between tMin and tMax
-                const bucketMap = new Map();
-
-                parsedPoints.forEach(pt => {
-                    // Bucket key rounded to nearest interval
-                    const bucketKey = Math.floor(pt.timestamp / intervalMs) * intervalMs;
-                    if (!bucketMap.has(bucketKey)) {
-                        bucketMap.set(bucketKey, []);
-                    }
-                    bucketMap.get(bucketKey).push(pt.value);
-                });
-
-                // Construct Chart arrays without empty zero pre-filling
-                const labels = [];
-                const chartValues = [];
-                let totalSum = 0;
-                let minVal = Infinity;
-                let maxVal = -Infinity;
-                let count = 0;
-
-                // Iterate over sorted buckets
-                const sortedBucketKeys = Array.from(bucketMap.keys()).sort((a, b) => a - b);
-
-                sortedBucketKeys.forEach(bKey => {
-                    const vals = bucketMap.get(bKey);
-                    const avg = vals.reduce((sum, v) => sum + v, 0) / vals.length;
-                    
-                    const dateObj = new Date(bKey);
-                    let label = '';
-                    if (currentTimeframe === '24h') {
-                        label = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        function setChartMetric(metric) {
+            currentChartMetric = metric;
+            const metrics = ['temp', 'hum', 'pres', 'lux'];
+            metrics.forEach(m => {
+                const btn = document.getElementById(`pillMetric${m.charAt(0).toUpperCase() + m.slice(1)}`);
+                if (btn) {
+                    if (m === metric) {
+                        btn.className = 'pill-btn active px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5';
                     } else {
-                        label = `${dateObj.getDate()}/${dateObj.getMonth()+1} ${dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                        btn.className = 'pill-btn text-slate-400 px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5 hover:text-white';
                     }
-
-                    labels.push(label);
-                    chartValues.push(avg);
-
-                    // Statistics tracking
-                    vals.forEach(v => {
-                        totalSum += v;
-                        if (v < minVal) minVal = v;
-                        if (v > maxVal) maxVal = v;
-                        count++;
-                    });
-                });
-
-                // Update Chart.js dataset and colors based on active metric
-                const colorMap = {
-                    temp: '#10b981', // Emerald
-                    umid: '#38bdf8', // Sky Blue
-                    press: '#a855f7', // Purple
-                    lux: '#f59e0b'   // Amber
-                };
-                const activeColor = colorMap[currentMetric] || '#10b981';
-
-                telemetryChart.data.labels = labels;
-                telemetryChart.data.datasets[0].data = chartValues;
-                telemetryChart.data.datasets[0].borderColor = activeColor;
-                telemetryChart.data.datasets[0].pointBackgroundColor = activeColor;
-                telemetryChart.data.datasets[0].backgroundColor = activeColor + '1F';
-                telemetryChart.update();
-
-                // Calculate human-readable available span description
-                const durationHours = Math.max(0.1, (tMax - tMin) / (1000 * 60 * 60));
-                let spanText = '';
-                if (durationHours < 24) {
-                    spanText = `${durationHours.toFixed(1)} hrs dispo.`;
-                } else {
-                    spanText = `${(durationHours / 24).toFixed(1)} dias dispo.`;
                 }
+            });
 
-                // Update Statistics display
-                document.getElementById('statAvg').innerText = (totalSum / count).toFixed(1);
-                document.getElementById('statMin').innerText = minVal.toFixed(1);
-                document.getElementById('statMax').innerText = maxVal.toFixed(1);
-                document.getElementById('statCount').innerText = count;
-                document.getElementById('statSpan').innerText = spanText;
-
-            } catch (err) {
-                console.error("Erro ao carregar histórico:", err);
-                displayEmptyChartState();
-            } finally {
-                loader.classList.add('hidden');
-            }
-        }
-
-        function displayEmptyChartState() {
-            telemetryChart.data.labels = [];
-            telemetryChart.data.datasets[0].data = [];
-            telemetryChart.update();
-
-            document.getElementById('statAvg').innerText = '--';
-            document.getElementById('statMin').innerText = '--';
-            document.getElementById('statMax').innerText = '--';
-            document.getElementById('statCount').innerText = '0';
-            document.getElementById('statSpan').innerText = 'Sem Dados';
+            fetchChartHistoryData();
         }
 
         async function fetchGitHubPhotos() {
-            if (!config.ghUser || !config.ghRepo) return;
+            const loadingState = document.getElementById('photoLoadingState');
+            const errorState = document.getElementById('photoErrorState');
+            const mainImg = document.getElementById('mainPhotoImage');
+            const overlay = document.getElementById('photoCaptionOverlay');
 
-            const loader = document.getElementById('galleryLoader');
-            const emptyState = document.getElementById('galleryEmptyState');
-            const mainImg = document.getElementById('mainGalleryImg');
-
-            loader.classList.remove('hidden');
-            emptyState.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            errorState.classList.add('hidden');
             mainImg.classList.add('hidden');
+            overlay.classList.add('hidden');
+
+            const { ghUser, ghRepo, ghFolder, ghBranch, ghToken } = appConfig;
+
+            // Standard URL requested: https://api.github.com/repos/Gui-Leite/painel-estufa/contents/fotos
+            const url = `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${ghFolder}?ref=${ghBranch}`;
+
+            const headers = {};
+            if (ghToken) {
+                headers['Authorization'] = `token ${ghToken}`;
+            }
 
             try {
-                // REST API endpoint for photos directory
-                const url = `https://api.github.com/repos/${config.ghUser}/${config.ghRepo}/contents/fotos`;
-                const response = await fetch(url);
+                const res = await fetch(url, { headers });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                // Filter for valid image formats
-                const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
-                galleryPhotos = data.filter(item => {
-                    const name = item.name.toLowerCase();
-                    return validExtensions.some(ext => name.endsWith(ext));
-                }).map(item => {
-                    // Extract or parse date from filename if present (e.g. 2026-03-28_102030.jpg or IMG_20260328)
-                    let detectedDate = '';
-                    const match = item.name.match(/\d{4}-\d{2}-\d{2}/) || item.name.match(/\d{8}/);
-                    if (match) {
-                        if (match[0].includes('-')) {
-                            detectedDate = match[0];
-                        } else {
-                            detectedDate = `${match[0].substring(0,4)}-${match[0].substring(4,6)}-${match[0].substring(6,8)}`;
-                        }
+                if (!res.ok) {
+                    if (res.status === 404) {
+                        showPhotoError('Repositório ou Pasta não encontrada', `A pasta '/${ghFolder}' não foi encontrada no repositório ${ghUser}/${ghRepo} na branch '${ghBranch}'.`);
+                    } else if (res.status === 403) {
+                        showPhotoError('Limite da API do GitHub atingido', 'O GitHub restringiu o limite de requisições anônimas. Insira um GitHub Token nas Configurações.');
+                    } else {
+                        showPhotoError('Erro ao carregar fotos', `Erro HTTP ${res.status} retornado pelo GitHub.`);
                     }
-                    return {
-                        name: item.name,
-                        downloadUrl: item.download_url,
-                        date: detectedDate
-                    };
-                });
-
-                if (galleryPhotos.length === 0) {
-                    loader.classList.add('hidden');
-                    emptyState.classList.remove('hidden');
                     return;
                 }
 
-                // Default filtered list is all photos
-                filteredPhotos = [...galleryPhotos];
+                const data = await res.json();
+
+                if (!Array.isArray(data)) {
+                    showPhotoError('Caminho inválido', 'O caminho informado não aponta para um diretório com fotos.');
+                    return;
+                }
+
+                // Filter image extensions
+                const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+                photoList = data.filter(file => {
+                    if (file.type !== 'file') return false;
+                    const name = file.name.toLowerCase();
+                    return validExtensions.some(ext => name.endsWith(ext));
+                });
+
+                if (photoList.length === 0) {
+                    showPhotoError('Nenhuma foto na pasta', `A pasta '/${ghFolder}' está vazia ou não contém imagens com formatos suportados.`);
+                    return;
+                }
+
+                // Sort photos (newest/alphabetical based on filename)
+                photoList.reverse();
+
+                filteredPhotoList = [...photoList];
                 currentPhotoIndex = 0;
-                renderGalleryActivePhoto();
-                renderThumbnails();
 
-            } catch (err) {
-                console.warn("Erro ao buscar fotos do GitHub:", err);
-                loader.classList.add('hidden');
-                emptyState.classList.remove('hidden');
+                renderPhotoGalleryUI();
+                displayCurrentPhoto();
+
+            } catch(e) {
+                console.error('Erro ao listar fotos do GitHub:', e);
+                showPhotoError('Erro de Conexão', 'Não foi possível conectar à API do GitHub. Verifique sua conexão com a internet.');
+            } finally {
+                loadingState.classList.add('hidden');
             }
         }
 
-        function renderGalleryActivePhoto() {
-            const loader = document.getElementById('galleryLoader');
-            const mainImg = document.getElementById('mainGalleryImg');
-            const counter = document.getElementById('photoIndexCounter');
-            const filenameEl = document.getElementById('photoFilename');
-
-            if (filteredPhotos.length === 0) {
-                mainImg.classList.add('hidden');
-                document.getElementById('galleryEmptyState').classList.remove('hidden');
-                counter.innerText = '0 / 0';
-                filenameEl.innerText = '--';
-                return;
-            }
-
-            const current = filteredPhotos[currentPhotoIndex];
-            mainImg.src = current.downloadUrl;
-            mainImg.classList.remove('hidden');
-            loader.classList.add('hidden');
-
-            counter.innerText = `${currentPhotoIndex + 1} de ${filteredPhotos.length}`;
-            filenameEl.innerText = current.name;
-
-            // Highlight active thumbnail
-            updateActiveThumbnailHighlight();
+        function showPhotoError(title, message) {
+            document.getElementById('photoLoadingState').classList.add('hidden');
+            document.getElementById('photoErrorTitle').innerText = title;
+            document.getElementById('photoErrorMessage').innerText = message;
+            document.getElementById('photoErrorState').classList.remove('hidden');
+            document.getElementById('photoErrorState').classList.add('flex');
+            document.getElementById('photoCountBadge').innerText = '0 fotos';
         }
 
-        function renderThumbnails() {
-            const container = document.getElementById('thumbnailContainer');
-            container.innerHTML = '';
+        function renderPhotoGalleryUI() {
+            // Update photo count badge
+            document.getElementById('photoCountBadge').innerText = `${filteredPhotoList.length} ${filteredPhotoList.length === 1 ? 'foto' : 'fotos'}`;
 
-            filteredPhotos.forEach((photo, idx) => {
-                const thumb = document.createElement('div');
-                thumb.className = `flex-shrink-0 w-20 h-16 rounded-xl overflow-hidden border-2 cursor-pointer transition ${idx === currentPhotoIndex ? 'border-emerald-500 scale-105' : 'border-slate-800 opacity-60 hover:opacity-100'}`;
-                thumb.onclick = () => {
-                    currentPhotoIndex = idx;
-                    renderGalleryActivePhoto();
-                };
+            // Populate dropdown
+            const dropdown = document.getElementById('photoSelectDropdown');
+            dropdown.innerHTML = '';
 
-                const img = document.createElement('img');
-                img.src = photo.downloadUrl;
-                img.className = 'w-full h-full object-cover';
-                img.alt = photo.name;
+            filteredPhotoList.forEach((photo, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.className = 'bg-slate-900';
+                option.innerText = `${index + 1}. ${photo.name}`;
+                dropdown.appendChild(option);
+            });
 
-                thumb.appendChild(img);
-                container.appendChild(thumb);
+            // Populate thumbnail strip
+            const strip = document.getElementById('thumbnailStrip');
+            strip.innerHTML = '';
+
+            filteredPhotoList.forEach((photo, index) => {
+                const thumb = document.createElement('img');
+                thumb.src = photo.download_url;
+                thumb.alt = photo.name;
+                thumb.className = `w-16 h-12 object-cover rounded-lg cursor-pointer border-2 transition-all flex-shrink-0 ${index === currentPhotoIndex ? 'border-emerald-500 opacity-100 scale-105' : 'border-slate-800 opacity-60 hover:opacity-100'}`;
+                thumb.onclick = () => selectPhotoByIndex(index);
+                strip.appendChild(thumb);
             });
         }
 
-        function updateActiveThumbnailHighlight() {
-            const container = document.getElementById('thumbnailContainer');
-            const children = container.children;
-            for (let i = 0; i < children.length; i++) {
-                if (i === currentPhotoIndex) {
-                    children[i].className = 'flex-shrink-0 w-20 h-16 rounded-xl overflow-hidden border-2 border-emerald-500 scale-105 transition cursor-pointer shadow-md';
-                    children[i].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        function displayCurrentPhoto() {
+            if (filteredPhotoList.length === 0) return;
+
+            const photo = filteredPhotoList[currentPhotoIndex];
+            const mainImg = document.getElementById('mainPhotoImage');
+            const overlay = document.getElementById('photoCaptionOverlay');
+
+            // Use the direct download_url from GitHub API response
+            mainImg.src = photo.download_url;
+            mainImg.classList.remove('hidden');
+
+            document.getElementById('photoFileNameText').innerText = photo.name;
+            document.getElementById('photoMetaText').innerText = `Tamanho: ${(photo.size / 1024).toFixed(1)} KB`;
+            document.getElementById('photoIndexBadge').innerText = `${currentPhotoIndex + 1} / ${filteredPhotoList.length}`;
+
+            // Update dropdown
+            document.getElementById('photoSelectDropdown').value = currentPhotoIndex;
+
+            // Update nav buttons disabled state
+            document.getElementById('btnPrevPhoto').disabled = currentPhotoIndex === 0;
+            document.getElementById('btnNextPhoto').disabled = currentPhotoIndex === filteredPhotoList.length - 1;
+
+            // Highlight thumbnail
+            const strip = document.getElementById('thumbnailStrip');
+            Array.from(strip.children).forEach((thumb, idx) => {
+                if (idx === currentPhotoIndex) {
+                    thumb.className = 'w-16 h-12 object-cover rounded-lg cursor-pointer border-2 border-emerald-500 opacity-100 scale-105 flex-shrink-0';
+                    thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                 } else {
-                    children[i].className = 'flex-shrink-0 w-20 h-16 rounded-xl overflow-hidden border-2 border-slate-800 opacity-60 hover:opacity-100 transition cursor-pointer';
+                    thumb.className = 'w-16 h-12 object-cover rounded-lg cursor-pointer border-2 border-slate-800 opacity-60 hover:opacity-100 flex-shrink-0';
                 }
+            });
+
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+
+        function onMainPhotoLoaded() {
+            // Smooth reveal
+            document.getElementById('mainPhotoImage').style.opacity = '1';
+        }
+
+        function onMainPhotoError() {
+            showToast('Erro ao carregar a imagem original.', 'error');
+        }
+
+        function navigatePhoto(direction) {
+            const newIndex = currentPhotoIndex + direction;
+            if (newIndex >= 0 && newIndex < filteredPhotoList.length) {
+                currentPhotoIndex = newIndex;
+                displayCurrentPhoto();
             }
         }
 
-        function prevPhoto() {
-            if (filteredPhotos.length === 0) return;
-            currentPhotoIndex = (currentPhotoIndex - 1 + filteredPhotos.length) % filteredPhotos.length;
-            renderGalleryActivePhoto();
+        function selectPhotoFromDropdown(indexStr) {
+            const idx = parseInt(indexStr);
+            if (!isNaN(idx) && idx >= 0 && idx < filteredPhotoList.length) {
+                currentPhotoIndex = idx;
+                displayCurrentPhoto();
+            }
         }
 
-        function nextPhoto() {
-            if (filteredPhotos.length === 0) return;
-            currentPhotoIndex = (currentPhotoIndex + 1) % filteredPhotos.length;
-            renderGalleryActivePhoto();
+        function selectPhotoByIndex(idx) {
+            if (idx >= 0 && idx < filteredPhotoList.length) {
+                currentPhotoIndex = idx;
+                displayCurrentPhoto();
+            }
         }
 
-        function filterGalleryByDate() {
-            const selectedDate = document.getElementById('galleryDateFilter').value;
-            if (!selectedDate) {
-                filteredPhotos = [...galleryPhotos];
+        function filterPhotosByDate() {
+            const dateVal = document.getElementById('photoDatePicker').value; // YYYY-MM-DD
+            if (!dateVal) {
+                filteredPhotoList = [...photoList];
             } else {
-                filteredPhotos = galleryPhotos.filter(p => p.date === selectedDate);
+                filteredPhotoList = photoList.filter(photo => {
+                    // Match date formatted inside filename e.g. 2026-03-28 or 20260328
+                    const cleanDate = dateVal.replace(/-/g, '');
+                    return photo.name.includes(dateVal) || photo.name.includes(cleanDate);
+                });
             }
+
+            if (filteredPhotoList.length === 0) {
+                showToast('Nenhuma foto encontrada para a data selecionada.', 'warning');
+            } else {
+                showToast(`${filteredPhotoList.length} fotos encontradas para a data selecionada.`, 'success');
+            }
+
             currentPhotoIndex = 0;
-            renderGalleryActivePhoto();
-            renderThumbnails();
+            renderPhotoGalleryUI();
+            if (filteredPhotoList.length > 0) {
+                displayCurrentPhoto();
+            }
         }
 
-        function clearGalleryDateFilter() {
-            document.getElementById('galleryDateFilter').value = '';
-            filteredPhotos = [...galleryPhotos];
+        function clearDateFilter() {
+            document.getElementById('photoDatePicker').value = '';
+            filteredPhotoList = [...photoList];
             currentPhotoIndex = 0;
-            renderGalleryActivePhoto();
-            renderThumbnails();
-        }
-
-        function openLightbox() {
-            if (filteredPhotos.length === 0) return;
-            const current = filteredPhotos[currentPhotoIndex];
-            document.getElementById('lightboxImg').src = current.downloadUrl;
-            document.getElementById('lightboxTitle').innerText = current.name;
-            document.getElementById('lightboxModal').classList.remove('hidden');
-            resetLightboxZoom();
-        }
-
-        function closeLightbox() {
-            document.getElementById('lightboxModal').classList.add('hidden');
-        }
-
-        function zoomInLightbox() {
-            lightboxZoomScale += 0.25;
-            document.getElementById('lightboxImg').style.transform = `scale(${lightboxZoomScale})`;
-        }
-
-        function zoomOutLightbox() {
-            if (lightboxZoomScale > 0.5) {
-                lightboxZoomScale -= 0.25;
-                document.getElementById('lightboxImg').style.transform = `scale(${lightboxZoomScale})`;
+            renderPhotoGalleryUI();
+            if (filteredPhotoList.length > 0) {
+                displayCurrentPhoto();
             }
+            showToast('Filtro de data removido.', 'info');
         }
 
-        function resetLightboxZoom() {
-            lightboxZoomScale = 1;
-            document.getElementById('lightboxImg').style.transform = 'scale(1)';
+        function openZoomModal() {
+            if (filteredPhotoList.length === 0) return;
+            const photo = filteredPhotoList[currentPhotoIndex];
+            document.getElementById('zoomImage').src = photo.download_url;
+            document.getElementById('zoomFileName').innerText = photo.name;
+            document.getElementById('zoomModal').classList.remove('hidden');
         }
 
-        // Keyboard arrow navigation support for gallery
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') {
-                prevPhoto();
-            } else if (e.key === 'ArrowRight') {
-                nextPhoto();
-            } else if (e.key === 'Escape') {
-                closeLightbox();
-                closeSettingsModal();
-            }
-        });
+        function closeZoomModal() {
+            document.getElementById('zoomModal').classList.add('hidden');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            const bgColors = {
+                success: 'bg-emerald-600 text-white',
+                error: 'bg-red-600 text-white',
+                warning: 'bg-amber-600 text-white',
+                info: 'bg-slate-800 text-slate-200 border border-slate-700'
+            };
+
+            const icons = {
+                success: 'fa-circle-check',
+                error: 'fa-circle-exclamation',
+                warning: 'fa-triangle-exclamation',
+                info: 'fa-circle-info'
+            };
+
+            toast.className = `px-4 py-3 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2 transition-all transform translate-y-2 opacity-0 pointer-events-auto ${bgColors[type] || bgColors.info}`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type]} text-sm"></i> <span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            // Animate out
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
     </script>
 </body>
 </html>
