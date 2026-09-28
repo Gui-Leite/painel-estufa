@@ -44,12 +44,14 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold text-slate-100 tracking-tight">Estufa IoT</h1>
-                    <p class="text-[11px] text-slate-400 uppercase tracking-wider">Monitoramento em Tempo Real</p>
+                    <p class="text-[11px] text-slate-400 uppercase tracking-wider">Monitoramento Dinâmico em Tempo Real</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-4">
-                <span id="last-sync-time" class="text-xs text-slate-500 font-medium"></span>
+                <span id="last-sync-time" class="text-xs text-slate-500 font-medium flex items-center gap-2">
+                    <!-- O ícone do ponto online vai aqui via JS -->
+                </span>
                 <button onclick="limparChave()" class="text-xs text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1">
                     <i class="fa-solid fa-trash-can"></i> Sair
                 </button>
@@ -123,26 +125,32 @@
         </section>
 
         <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- Câmera GitHub -->
-            <div class="lg:col-span-4 glass-panel rounded-2xl p-4 flex flex-col">
-                <h3 class="font-semibold text-xs text-slate-200 flex items-center gap-2 mb-3">
-                    <i class="fa-solid fa-camera text-slate-400"></i> Visão da Estufa
-                </h3>
-                <div class="relative w-full aspect-video lg:aspect-square rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center">
-                    <img id="cam-imagem" src="" alt="Câmera" class="w-full h-full object-cover hidden">
-                    <div id="cam-placeholder" class="text-slate-600 text-center text-xs">
-                        <i class="fa-solid fa-image text-2xl mb-2 opacity-50"></i><br>Aguardando imagem...
+            
+            <!-- Câmera do GitHub Automática -->
+            <div class="lg:col-span-4 glass-panel rounded-2xl p-4 flex flex-col items-center">
+                <div class="w-full flex justify-between items-center mb-3">
+                    <h3 class="font-semibold text-xs text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-camera text-slate-400"></i> Última Imagem Capturada
+                    </h3>
+                </div>
+                <div class="relative w-full aspect-video lg:aspect-square rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex flex-col items-center justify-center">
+                    <img id="cam-imagem" src="" alt="Câmera Estufa" class="w-full h-full object-cover hidden">
+                    <div id="cam-placeholder" class="text-slate-600 text-center text-xs p-4">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 opacity-50"></i><br>Buscando diretório no GitHub...
                     </div>
                 </div>
+                <!-- Nova tag de legenda do nome do arquivo -->
+                <small id="cam-filename" class="text-[10px] text-slate-500 mt-3 font-mono bg-slate-900/50 px-2 py-1 rounded hidden"></small>
             </div>
 
-            <!-- Gráfico com Overlay de Loading -->
+            <!-- Gráfico Histórico -->
             <div class="lg:col-span-8 glass-panel rounded-2xl p-4 flex flex-col relative">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                     <h3 class="font-semibold text-xs text-slate-200 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-area text-emerald-400"></i> Histórico
+                        <i class="fa-solid fa-chart-area text-emerald-400"></i> Histórico Interativo
                     </h3>
 
+                    <!-- Botões de Métricas -->
                     <div class="flex flex-wrap gap-2">
                         <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700 text-[10px] select-none" id="metric-buttons">
                             <button id="btn-met-temperatura" onclick="handleMetricClick('temperatura')" class="px-3 py-1.5 rounded transition-colors">Temp</button>
@@ -150,6 +158,7 @@
                             <button id="btn-met-pressao" onclick="handleMetricClick('pressao')" class="px-3 py-1.5 rounded transition-colors">Pressão</button>
                             <button id="btn-met-luminosidade" onclick="handleMetricClick('luminosidade')" class="px-3 py-1.5 rounded transition-colors">Lux</button>
                         </div>
+                        <!-- Botões de Período -->
                         <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700 text-[10px] select-none" id="range-buttons">
                             <button id="btn-per-24h" onclick="handleRangeClick('24h')" class="px-3 py-1.5 rounded transition-colors">24h</button>
                             <button id="btn-per-30d" onclick="handleRangeClick('30d')" class="px-3 py-1.5 rounded transition-colors">30 Dias</button>
@@ -163,7 +172,7 @@
                     <!-- Overlay de Loading -->
                     <div id="chart-loading-overlay" class="chart-overlay absolute inset-0 z-10 hidden flex flex-col items-center justify-center rounded-lg border border-slate-700/50">
                         <i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-500 mb-3"></i>
-                        <span class="text-sm font-medium text-slate-300">Buscando dados no servidor...</span>
+                        <span class="text-sm font-medium text-slate-300">Buscando e processando dados...</span>
                     </div>
                 </div>
             </div>
@@ -172,7 +181,7 @@
 
     <script>
         // =========================================================================
-        // 1. CONSTANTES E CONFIGURAÇÕES
+        // 1. CONSTANTES E CONFIGURAÇÕES EXIGIDAS
         // =========================================================================
         const AIO_USERNAME = "GuilhermeFLeite";
         const FEEDS = {
@@ -184,8 +193,7 @@
         
         const GITHUB_OWNER = "Gui-Leite";
         const GITHUB_REPO = "painel-estufa";
-        const GITHUB_BRANCH = "main";
-        const GITHUB_IMAGE_PATH = "fotos/estufa4.jpeg";
+        const GITHUB_IMAGE_FOLDER = "fotos"; // O código fará fetch dinâmico nesta pasta
 
         // =========================================================================
         // 2. VARIÁVEIS DE ESTADO E CACHE
@@ -206,16 +214,16 @@
 
         function initDashboard() {
             const key = localStorage.getItem('AIO_KEY');
-            updateButtonStyles(); // Força o CSS inicial dos botões ativos
+            updateButtonStyles(); 
             
             if (key) {
                 document.getElementById('config-panel').classList.add('hidden');
-                // Dispara carregamento inicial completo
                 loadFullDashboard();
-                // Configura ciclo silencioso de 5 minutos (300.000 ms)
+                // O ciclo silencioso a cada 5 min (300.000 ms)
                 setInterval(silentBackgroundSync, 300000);
             } else {
                 document.getElementById('config-panel').classList.remove('hidden');
+                document.getElementById('last-sync-time').innerText = "Aguardando chave...";
             }
         }
 
@@ -235,7 +243,6 @@
         }
 
         function updateButtonStyles() {
-            // Estiliza Botões de Métrica
             ['temperatura', 'umidade', 'pressao', 'luminosidade'].forEach(m => {
                 const btn = document.getElementById(`btn-met-${m}`);
                 btn.className = 'px-3 py-1.5 rounded transition-colors cursor-pointer text-slate-400 hover:text-slate-200';
@@ -247,7 +254,6 @@
                 }
             });
 
-            // Estiliza Botões de Período
             ['24h', '30d'].forEach(p => {
                 const btn = document.getElementById(`btn-per-${p}`);
                 btn.className = 'px-3 py-1.5 rounded transition-colors cursor-pointer text-slate-400 hover:text-slate-200';
@@ -258,32 +264,31 @@
         async function handleMetricClick(novaMetrica) {
             if (activeMetric === novaMetrica) return;
             activeMetric = novaMetrica;
-            updateButtonStyles(); // Atualização visual instantânea!
+            updateButtonStyles(); 
             await updateChartDisplay(); 
         }
 
         async function handleRangeClick(novoPeriodo) {
             if (activeRange === novoPeriodo) return;
             activeRange = novoPeriodo;
-            updateButtonStyles(); // Atualização visual instantânea!
+            updateButtonStyles(); 
             await updateChartDisplay();
         }
 
         async function loadFullDashboard() {
             fetchRealTimeCards();
-            fetchGitHubImage();
+            fetchLatestGitHubImage();
             await updateChartDisplay();
             updateLastSyncText();
         }
 
         async function silentBackgroundSync() {
-            // Roda silenciosamente a cada 5 min. Sem overlay, sem recarregar tela.
             await fetchRealTimeCards();
-            await fetchGitHubImage();
+            await fetchLatestGitHubImage();
             
-            // Forçamos limpeza do cache da view atual para pegar dados novos no gráfico
+            // Limpa APENAS o cache da visão ativa para garantir dados frescos e atualiza sem loader
             chartCache[activeRange][activeMetric] = null;
-            await updateChartDisplay(true); // O parâmetro 'true' esconde o overlay
+            await updateChartDisplay(true); 
             
             updateLastSyncText();
         }
@@ -291,20 +296,55 @@
         function updateLastSyncText() {
             const now = new Date();
             const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('last-sync-time').innerText = `Sincronizado às ${timeStr}`;
+            document.getElementById('last-sync-time').innerHTML = `<i class="fa-solid fa-circle text-[8px] text-emerald-500 animate-pulse"></i> Última sincronização: ${timeStr}`;
         }
 
-        async function fetchGitHubImage() {
+        async function fetchLatestGitHubImage() {
             const imgEl = document.getElementById('cam-imagem');
             const placeholder = document.getElementById('cam-placeholder');
-            const timestamp = Date.now();
-            const urlRaw = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${GITHUB_IMAGE_PATH}?t=${timestamp}`;
+            const filenameEl = document.getElementById('cam-filename');
             
-            imgEl.onload = () => {
-                imgEl.classList.remove('hidden');
-                placeholder.classList.add('hidden');
-            };
-            imgEl.src = urlRaw;
+            try {
+                // Rota da API do GitHub para ler o diretório (pasta)
+                const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_IMAGE_FOLDER}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`Erro na API GitHub: ${response.status}`);
+                }
+                
+                const files = await response.json();
+                
+                // Filtra para manter apenas extensões de imagem comuns
+                const images = files.filter(f => f.name.match(/\.(jpe?g|png|gif)$/i));
+                
+                if (images.length === 0) {
+                    throw new Error("Nenhuma imagem encontrada na pasta");
+                }
+                
+                // Ordenação Alfabética Inteligente, respeitando os numerais nos nomes de arquivo 
+                // Ex: "foto2.jpg" virá ANTES de "foto10.jpg"
+                images.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
+                
+                // Captura a última imagem da lista ordenada (a mais recente logicamente falando)
+                const latestImage = images[images.length - 1];
+                
+                // Adiciona um timestamp na URL para burlar o cache intenso de navegadores/GitHub CDN
+                const cacheBusterUrl = latestImage.download_url + '?t=' + Date.now();
+                
+                imgEl.onload = () => {
+                    imgEl.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    filenameEl.innerText = `📁 ${latestImage.name}`;
+                    filenameEl.classList.remove('hidden');
+                };
+                
+                imgEl.src = cacheBusterUrl;
+
+            } catch (err) {
+                console.error("Falha ao buscar imagem no GitHub:", err);
+                placeholder.innerHTML = `<i class="fa-solid fa-image-slash text-2xl mb-2 opacity-50"></i><br>Erro de leitura do repo`;
+            }
         }
 
         async function fetchRealTimeCards() {
@@ -333,14 +373,12 @@
         async function updateChartDisplay(isSilent = false) {
             const cachedData = chartCache[activeRange][activeMetric];
 
-            // Se tem cache, desenha direto sem requisição
+            // Retorno instantâneo do Cache, UI super responsiva
             if (cachedData) {
                 renderChart(cachedData.labels, cachedData.values, activeMetric);
                 return;
             }
 
-            // Se não tem cache, precisamos baixar. 
-            // Mostra o Overlay (apenas se não for sincronização silenciosa)
             const overlay = document.getElementById('chart-loading-overlay');
             if (!isSilent) overlay.classList.remove('hidden');
 
@@ -349,15 +387,11 @@
                 const rawData = await fetchAllHistoricalData(FEEDS[activeMetric], horas);
                 const processed = processDownsampling(rawData, activeRange);
                 
-                // Guarda no cache
                 chartCache[activeRange][activeMetric] = processed;
-                
-                // Desenha
                 renderChart(processed.labels, processed.values, activeMetric);
             } catch (err) {
                 console.error("Erro ao puxar dados do gráfico", err);
             } finally {
-                // Esconde overlay sempre no final
                 overlay.classList.add('hidden');
             }
         }
@@ -369,7 +403,7 @@
             let startTime = new Date(Date.now() - (hours * 3600 * 1000));
             let endTime = new Date();
 
-            // Loop de paginação sem limite fixo arbitrário para pegar todos os pontos até start_time
+            // Paginação até atingir a data correta (útil para quebrar as barreiras de 30 dias do Adafruit)
             while(true) {
                 const url = `https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${feedName}/data?start_time=${startTime.toISOString()}&end_time=${endTime.toISOString()}&limit=1000`;
                 const response = await fetch(url, { headers: { 'X-AIO-KEY': key } });
@@ -377,14 +411,13 @@
                 if (!response.ok) break;
                 
                 const dataChunk = await response.json();
-                if (dataChunk.length === 0) break; // Sem mais dados
+                if (dataChunk.length === 0) break; 
                 
                 allData.push(...dataChunk);
 
-                // O último item do chunk é o mais antigo retornado. 
-                // Avançamos o end_time para continuar puxando pro passado.
+                // Configurando a próxima iteração baseada no dado mais velho recebido neste lote
                 const oldestInChunk = new Date(dataChunk[dataChunk.length - 1].created_at);
-                endTime = new Date(oldestInChunk.getTime() - 1); // -1 ms para não duplicar
+                endTime = new Date(oldestInChunk.getTime() - 1);
 
                 if (endTime <= startTime) break;
             }
@@ -395,11 +428,11 @@
         function processDownsampling(rawData, periodo) {
             if (!rawData || rawData.length === 0) return { labels: [], values: [] };
 
-            // Ordenar do mais Antigo para o mais Novo (Esquerda -> Direita)
+            // Crucial: O eixo x (Labels) flui da esquerda pra direita. Ordena asc.
             rawData.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-            // Downsampling Dinâmico garantindo performance e legibilidade (~250 pontos max)
-            const targetPoints = 250;
+            // Calculando o pulo entre dados baseado no volume. Limitando à cerca de 288 pontos na tela.
+            const targetPoints = 288;
             const step = Math.max(1, Math.ceil(rawData.length / targetPoints));
             
             const labels = [];
@@ -458,7 +491,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
-                    animation: { duration: 0 }, // Zera animação nativa pesada, já respondemos rápido
+                    animation: { duration: 0 },
                     plugins: { 
                         legend: { display: false },
                         tooltip: {
