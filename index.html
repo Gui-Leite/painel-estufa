@@ -1,50 +1,14 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Monitoramento - Estufa Agrícola</title>
+    <title>Painel da Estufa Agrícola & Estação IoT</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        emerald: {
-                            400: '#34d399',
-                            500: '#10b981',
-                            600: '#059669',
-                            700: '#047857',
-                        },
-                        slate: {
-                            800: '#1e293b',
-                            900: '#0f172a',
-                            950: '#020617',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-
-    <!-- Google Fonts Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Chart.js and Date Adapter -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         body {
@@ -52,688 +16,440 @@
             background-color: #0f172a;
             color: #f8fafc;
         }
-
-        /* Custom Scrollbars */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-
-        /* Pill Buttons Custom Styling */
-        .pill-btn {
-            transition: all 0.2s ease-in-out;
-        }
-        .pill-btn.active {
-            background-color: #059669;
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
-        }
-
-        /* Smooth transitions */
-        .glass-card {
-            background: rgba(30, 41, 59, 0.85);
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-
-        .image-container {
-            background-color: #020617;
-            background-image: radial-gradient(#1e293b 1px, transparent 0);
-            background-size: 24px 24px;
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .chart-overlay {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
         }
     </style>
 </head>
-<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between">
+<body class="min-h-screen flex flex-col justify-between antialiased">
 
-    <!-- Navigation Header -->
-    <header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 lg:px-8 py-4">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-emerald-600/20 text-emerald-400 rounded-xl border border-emerald-500/30">
-                    <i class="fa-solid fa-leaf text-2xl"></i>
+    <header class="glass-panel sticky top-0 z-40 border-b border-slate-800 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <i class="fa-solid fa-leaf text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                        Painel de Estufa Agrícola
-                        <span id="syncStatusBadge" class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-normal">
-                            <i class="fa-solid fa-circle text-[8px] animate-pulse mr-1"></i> Conectado
-                        </span>
-                    </h1>
-                    <p class="text-xs text-slate-400">Monitoramento IoT &amp; Telemetria em Tempo Real</p>
+                    <h1 class="text-xl font-bold text-slate-100 tracking-tight">Estufa IoT</h1>
+                    <p class="text-[11px] text-slate-400 uppercase tracking-wider">Monitoramento em Tempo Real</p>
                 </div>
             </div>
 
-            <!-- Controls & Settings Header Actions -->
-            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-                <button id="btnRefreshAll" onclick="loadAllData()" class="px-3.5 py-2 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition flex items-center gap-2">
-                    <i class="fa-solid fa-rotate text-emerald-400" id="refreshIcon"></i>
-                    <span>Atualizar</span>
-                </button>
-                <button onclick="openSettingsModal()" class="px-3.5 py-2 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-lg shadow-emerald-900/30 transition flex items-center gap-2">
-                    <i class="fa-solid fa-gear"></i>
-                    <span>Configurações</span>
+            <div class="flex items-center gap-4">
+                <span id="last-sync-time" class="text-xs text-slate-500 font-medium"></span>
+                <button onclick="limparChave()" class="text-xs text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1">
+                    <i class="fa-solid fa-trash-can"></i> Sair
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8 flex-grow">
+    <main class="max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6 flex-grow">
 
-        <!-- SECTION 1: TOP - Real-Time Telemetry Cards -->
-        <section>
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-bolt text-emerald-400"></i> Telemetria em Tempo Real
-                </h2>
-                <span id="lastUpdatedText" class="text-xs text-slate-400">Última atualização: --:--:--</span>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                
-                <!-- Card 1: DHT22 Temperatura -->
-                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-emerald-500/40 transition-all duration-300">
-                    <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition text-emerald-400">
-                        <i class="fa-solid fa-temperature-high text-7xl"></i>
-                    </div>
-                    <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-3">
-                        <span>DHT22 Temperatura</span>
-                        <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400"><i class="fa-solid fa-temperature-half"></i></span>
-                    </div>
-                    <div class="flex items-baseline gap-1">
-                        <span id="valDhtTemp" class="text-3xl font-bold tracking-tight text-white">--</span>
-                        <span class="text-lg font-medium text-slate-400">°C</span>
-                    </div>
-                    <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                        <span>Sensor de Ar</span>
-                        <span id="statusDhtTemp" class="text-emerald-400 font-medium">Normal</span>
-                    </div>
+        <section id="config-panel" class="glass-panel rounded-2xl p-5 border border-amber-500/30 bg-amber-950/10 hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <h3 class="text-sm font-semibold text-amber-400 flex items-center gap-2">
+                        <i class="fa-solid fa-key"></i> Autenticação Adafruit IO
+                    </h3>
+                    <p class="text-xs text-slate-300">
+                        Insira sua <strong>Adafruit AIO Key</strong> para carregar os dados.
+                    </p>
                 </div>
-
-                <!-- Card 2: DHT22 Umidade -->
-                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-blue-500/40 transition-all duration-300">
-                    <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition text-blue-400">
-                        <i class="fa-solid fa-droplet text-7xl"></i>
-                    </div>
-                    <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-3">
-                        <span>DHT22 Umidade</span>
-                        <span class="p-1.5 rounded-lg bg-blue-500/10 text-blue-400"><i class="fa-solid fa-water"></i></span>
-                    </div>
-                    <div class="flex items-baseline gap-1">
-                        <span id="valDhtHum" class="text-3xl font-bold tracking-tight text-white">--</span>
-                        <span class="text-lg font-medium text-slate-400">%</span>
-                    </div>
-                    <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                        <span>Umidade Relativa</span>
-                        <span id="statusDhtHum" class="text-blue-400 font-medium">Adequada</span>
-                    </div>
-                </div>
-
-                <!-- Card 3: BMP180 Pressão -->
-                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-purple-500/40 transition-all duration-300">
-                    <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition text-purple-400">
-                        <i class="fa-solid fa-gauge-high text-7xl"></i>
-                    </div>
-                    <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-3">
-                        <span>BMP180 Pressão</span>
-                        <span class="p-1.5 rounded-lg bg-purple-500/10 text-purple-400"><i class="fa-solid fa-compress"></i></span>
-                    </div>
-                    <div class="flex items-baseline gap-1">
-                        <span id="valBmpPres" class="text-3xl font-bold tracking-tight text-white">--</span>
-                        <span class="text-lg font-medium text-slate-400">hPa</span>
-                    </div>
-                    <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                        <span>Pressão Atmosférica</span>
-                        <span id="statusBmpPres" class="text-purple-400 font-medium">Estável</span>
-                    </div>
-                </div>
-
-                <!-- Card 4: Lux BH1750 -->
-                <div class="glass-card rounded-2xl p-5 relative overflow-hidden group hover:border-amber-500/40 transition-all duration-300">
-                    <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition text-amber-400">
-                        <i class="fa-solid fa-sun text-7xl"></i>
-                    </div>
-                    <div class="flex items-center justify-between text-slate-400 text-xs font-medium mb-3">
-                        <span>BH1750 Luminosidade</span>
-                        <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400"><i class="fa-solid fa-lightbulb"></i></span>
-                    </div>
-                    <div class="flex items-baseline gap-1">
-                        <span id="valLux" class="text-3xl font-bold tracking-tight text-white">--</span>
-                        <span class="text-lg font-medium text-slate-400">Lux</span>
-                    </div>
-                    <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                        <span>Luminosidade Solar</span>
-                        <span id="statusLux" class="text-amber-400 font-medium">Ótima</span>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- SECTION 2: MIDDLE - Historical Chart -->
-        <section class="glass-card rounded-2xl p-5 lg:p-6 shadow-xl">
-            <!-- Header & Pill Controls -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-                <div>
-                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-chart-line text-emerald-400"></i> Histórico de Medições
-                    </h2>
-                    <p class="text-xs text-slate-400">Análise temporal agrupada e dimensionada dinamicamente</p>
-                </div>
-
-                <!-- Pill Controls Toolbar -->
-                <div class="flex flex-wrap items-center gap-3">
-                    <!-- Period Group Pills -->
-                    <div class="bg-slate-900/90 p-1 rounded-xl border border-slate-800 flex items-center gap-1">
-                        <button onclick="setChartPeriod('24h')" id="pillPeriod24h" class="pill-btn active px-3 py-1.5 text-xs font-medium rounded-lg hover:text-white transition">
-                            24 Horas
-                        </button>
-                        <button onclick="setChartPeriod('30d')" id="pillPeriod30d" class="pill-btn text-slate-400 px-3 py-1.5 text-xs font-medium rounded-lg hover:text-white transition">
-                            30 Dias
-                        </button>
-                    </div>
-
-                    <!-- Metrics Group Pills -->
-                    <div class="bg-slate-900/90 p-1 rounded-xl border border-slate-800 flex flex-wrap items-center gap-1">
-                        <button onclick="setChartMetric('temp')" id="pillMetricTemp" class="pill-btn active px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5">
-                            <span>🌡️</span> <span>Temp.</span>
-                        </button>
-                        <button onclick="setChartMetric('hum')" id="pillMetricHum" class="pill-btn text-slate-400 px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5">
-                            <span>💧</span> <span>Umidade</span>
-                        </button>
-                        <button onclick="setChartMetric('pres')" id="pillMetricPres" class="pill-btn text-slate-400 px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5">
-                            <span>📊</span> <span>Pressão</span>
-                        </button>
-                        <button onclick="setChartMetric('lux')" id="pillMetricLux" class="pill-btn text-slate-400 px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5">
-                            <span>☀️</span> <span>Lux</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chart Canvas Container -->
-            <div class="relative w-full h-[320px] sm:h-[380px] pt-4">
-                <canvas id="historyChart"></canvas>
-                <div id="chartLoadingOverlay" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl transition-opacity duration-300 hidden">
-                    <i class="fa-solid fa-spinner fa-spin text-3xl text-emerald-400 mb-2"></i>
-                    <span class="text-xs text-slate-300 font-medium">Carregando dados históricos...</span>
+                <div class="flex items-center gap-2 flex-grow max-w-md">
+                    <input type="password" id="input-aio-key" placeholder="Sua aio_key..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                    <button onclick="salvarChave()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-medium transition-all">Salvar</button>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 3: BOTTOM - GitHub Photo Gallery -->
-        <section class="glass-card rounded-2xl p-5 lg:p-6 shadow-xl">
-            <!-- Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-                <div>
-                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-camera text-emerald-400"></i> Galeria de Fotos da Estufa
-                    </h2>
-                    <p class="text-xs text-slate-400" id="photoSubText">Sincronizado diretamente do repositório GitHub</p>
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between border-l-2 border-l-amber-500">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Temperatura</span>
+                    <i class="fa-solid fa-temperature-half text-amber-500"></i>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span id="photoCountBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono">
-                        0 fotos
-                    </span>
-                    <button onclick="fetchGitHubPhotos()" class="p-2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="Recarregar Fotos">
-                        <i class="fa-solid fa-arrows-rotate"></i>
-                    </button>
+                <div class="flex items-baseline space-x-1">
+                    <span id="rt-temp-val" class="text-3xl font-bold text-slate-100">--</span>
+                    <span class="text-sm text-slate-400">°C</span>
                 </div>
             </div>
 
-            <!-- Toolbar Controls -->
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                
-                <!-- Date Filter Input -->
-                <div class="md:col-span-4 flex items-center gap-2 bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-                    <i class="fa-regular fa-calendar text-emerald-400 pl-2 text-sm"></i>
-                    <label for="photoDatePicker" class="sr-only">Filtrar por data</label>
-                    <input type="date" id="photoDatePicker" onchange="filterPhotosByDate()" class="bg-transparent text-xs text-white focus:outline-none w-full cursor-pointer">
-                    <button onclick="clearDateFilter()" title="Limpar Filtro de Data" class="text-slate-400 hover:text-white px-2 text-xs">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
+            <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between border-l-2 border-l-sky-500">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Umidade</span>
+                    <i class="fa-solid fa-droplet text-sky-500"></i>
                 </div>
-
-                <!-- Dropdown Direct File Select -->
-                <div class="md:col-span-5 bg-slate-900/80 p-2 rounded-xl border border-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-image text-slate-400 pl-2 text-sm"></i>
-                    <label for="photoSelectDropdown" class="sr-only">Selecionar Foto</label>
-                    <select id="photoSelectDropdown" onchange="selectPhotoFromDropdown(this.value)" class="bg-transparent text-xs text-slate-200 focus:outline-none w-full cursor-pointer">
-                        <option value="" class="bg-slate-900">Carregando lista de fotos...</option>
-                    </select>
-                </div>
-
-                <!-- Navigation Buttons & Fullscreen -->
-                <div class="md:col-span-3 flex items-center justify-end gap-2">
-                    <button onclick="navigatePhoto(-1)" id="btnPrevPhoto" class="flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium text-slate-200 rounded-xl border border-slate-700 transition flex items-center justify-center gap-1">
-                        <i class="fa-solid fa-chevron-left"></i> Anterior
-                    </button>
-                    <button onclick="navigatePhoto(1)" id="btnNextPhoto" class="flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium text-slate-200 rounded-xl border border-slate-700 transition flex items-center justify-center gap-1">
-                        Próxima <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-                    <button onclick="openZoomModal()" id="btnZoomPhoto" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition flex items-center justify-center" title="Ampliar Foto">
-                        <i class="fa-solid fa-expand text-sm"></i>
-                    </button>
+                <div class="flex items-baseline space-x-1">
+                    <span id="rt-umid-val" class="text-3xl font-bold text-slate-100">--</span>
+                    <span class="text-sm text-slate-400">%</span>
                 </div>
             </div>
 
-            <!-- Main Photo Display Box -->
-            <div class="mt-4 relative rounded-xl overflow-hidden border border-slate-800 image-container min-h-[350px] sm:min-h-[480px] flex items-center justify-center">
-                
-                <!-- Active Image View -->
-                <img id="mainPhotoImage" src="" alt="Foto da Estufa" class="max-h-[500px] w-full h-auto object-contain transition-opacity duration-300 hidden" onload="onMainPhotoLoaded()" onerror="onMainPhotoError()">
-                
-                <!-- Loading State -->
-                <div id="photoLoadingState" class="flex flex-col items-center justify-center p-8 text-center">
-                    <i class="fa-solid fa-spinner fa-spin text-4xl text-emerald-400 mb-3"></i>
-                    <p class="text-sm font-medium text-slate-300">Conectando à API do GitHub...</p>
-                    <p class="text-xs text-slate-500 mt-1">Carregando imagens do repositório</p>
+            <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between border-l-2 border-l-indigo-500">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Pressão</span>
+                    <i class="fa-solid fa-gauge-high text-indigo-500"></i>
                 </div>
-
-                <!-- Error / Empty GitHub State (404 or Folder Empty) -->
-                <div id="photoErrorState" class="hidden flex-col items-center justify-center p-8 text-center max-w-md">
-                    <div class="p-3 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20 mb-3">
-                        <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
-                    </div>
-                    <h3 class="text-sm font-semibold text-white mb-1" id="photoErrorTitle">Nenhuma foto encontrada</h3>
-                    <p class="text-xs text-slate-400 mb-4" id="photoErrorMessage">Não foi possível localizar imagens na pasta/repositório informado ou limite de requisições do GitHub atingido.</p>
-                    <button onclick="openSettingsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 rounded-xl text-xs font-medium transition">
-                        <i class="fa-solid fa-sliders mr-1"></i> Verificar Configurações do GitHub
-                    </button>
-                </div>
-
-                <!-- Floating Caption Overlay -->
-                <div id="photoCaptionOverlay" class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/90 via-slate-950/60 to-transparent p-4 flex items-end justify-between hidden">
-                    <div>
-                        <p id="photoFileNameText" class="text-xs font-semibold text-white font-mono"></p>
-                        <p id="photoMetaText" class="text-[11px] text-slate-400 mt-0.5"></p>
-                    </div>
-                    <span id="photoIndexBadge" class="text-[10px] bg-slate-900/80 px-2 py-1 rounded text-slate-300 font-mono border border-slate-800">1 / 1</span>
+                <div class="flex items-baseline space-x-1">
+                    <span id="rt-press-val" class="text-3xl font-bold text-slate-100">--</span>
+                    <span class="text-sm text-slate-400">hPa</span>
                 </div>
             </div>
 
-            <!-- Scrollable Thumbnail Strip -->
-            <div class="mt-4">
-                <div id="thumbnailStrip" class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                    <!-- Thumbnails generated dynamically -->
+            <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between border-l-2 border-l-yellow-400">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Luminosidade</span>
+                    <i class="fa-regular fa-sun text-yellow-400"></i>
+                </div>
+                <div class="flex items-baseline space-x-1">
+                    <span id="rt-lux-val" class="text-3xl font-bold text-slate-100">--</span>
+                    <span class="text-sm text-slate-400">Lux</span>
                 </div>
             </div>
         </section>
 
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Câmera GitHub -->
+            <div class="lg:col-span-4 glass-panel rounded-2xl p-4 flex flex-col">
+                <h3 class="font-semibold text-xs text-slate-200 flex items-center gap-2 mb-3">
+                    <i class="fa-solid fa-camera text-slate-400"></i> Visão da Estufa
+                </h3>
+                <div class="relative w-full aspect-video lg:aspect-square rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center">
+                    <img id="cam-imagem" src="" alt="Câmera" class="w-full h-full object-cover hidden">
+                    <div id="cam-placeholder" class="text-slate-600 text-center text-xs">
+                        <i class="fa-solid fa-image text-2xl mb-2 opacity-50"></i><br>Aguardando imagem...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico com Overlay de Loading -->
+            <div class="lg:col-span-8 glass-panel rounded-2xl p-4 flex flex-col relative">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <h3 class="font-semibold text-xs text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-area text-emerald-400"></i> Histórico
+                    </h3>
+
+                    <div class="flex flex-wrap gap-2">
+                        <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700 text-[10px] select-none" id="metric-buttons">
+                            <button id="btn-met-temperatura" onclick="handleMetricClick('temperatura')" class="px-3 py-1.5 rounded transition-colors">Temp</button>
+                            <button id="btn-met-umidade" onclick="handleMetricClick('umidade')" class="px-3 py-1.5 rounded transition-colors">Umidade</button>
+                            <button id="btn-met-pressao" onclick="handleMetricClick('pressao')" class="px-3 py-1.5 rounded transition-colors">Pressão</button>
+                            <button id="btn-met-luminosidade" onclick="handleMetricClick('luminosidade')" class="px-3 py-1.5 rounded transition-colors">Lux</button>
+                        </div>
+                        <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-700 text-[10px] select-none" id="range-buttons">
+                            <button id="btn-per-24h" onclick="handleRangeClick('24h')" class="px-3 py-1.5 rounded transition-colors">24h</button>
+                            <button id="btn-per-30d" onclick="handleRangeClick('30d')" class="px-3 py-1.5 rounded transition-colors">30 Dias</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative w-full flex-grow min-h-[280px]">
+                    <canvas id="historicalChart"></canvas>
+                    
+                    <!-- Overlay de Loading -->
+                    <div id="chart-loading-overlay" class="chart-overlay absolute inset-0 z-10 hidden flex flex-col items-center justify-center rounded-lg border border-slate-700/50">
+                        <i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-500 mb-3"></i>
+                        <span class="text-sm font-medium text-slate-300">Buscando dados no servidor...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-slate-800 bg-slate-950/50 py-4 px-4 text-center text-xs text-slate-500 mt-8">
-        <p>Painel da Estufa Agrícola &copy; 2026 — Telemetria Adafruit IO &amp; Imagens GitHub</p>
-    </footer>
-
-    <!-- MODAL 1: Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
-        <div class="glass-card w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-700 max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
-                <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-emerald-400"></i> Configurações das APIs
-                </h3>
-                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-lg">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <form onsubmit="saveSettings(event)" class="mt-4 space-y-4">
-                <!-- Adafruit IO Credentials -->
-                <div class="space-y-3 pt-1">
-                    <h4 class="text-xs font-semibold text-emerald-400 tracking-wider uppercase flex items-center gap-1.5">
-                        <i class="fa-solid fa-cloud"></i> Adafruit IO (Telemetria)
-                    </h4>
-                    <div>
-                        <label for="cfgAioUsername" class="block text-xs font-medium text-slate-300 mb-1">AIO Username</label>
-                        <input type="text" id="cfgAioUsername" placeholder="Ex: seunome" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
-                    </div>
-                    <div>
-                        <label for="cfgAioKey" class="block text-xs font-medium text-slate-300 mb-1">AIO Key</label>
-                        <input type="password" id="cfgAioKey" placeholder="aio_xxxxxxxxxxxxxxxxx" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
-                    </div>
-
-                    <!-- Feed Names Sub-Section -->
-                    <div class="grid grid-cols-2 gap-2 pt-1">
-                        <div>
-                            <label for="cfgFeedDhtTemp" class="block text-[11px] text-slate-400 mb-0.5">Feed DHT Temp</label>
-                            <input type="text" id="cfgFeedDhtTemp" value="dht22-temp" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
-                        </div>
-                        <div>
-                            <label for="cfgFeedDhtHum" class="block text-[11px] text-slate-400 mb-0.5">Feed DHT Umidade</label>
-                            <input type="text" id="cfgFeedDhtHum" value="dht22-umidade" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
-                        </div>
-                        <div>
-                            <label for="cfgFeedBmpPres" class="block text-[11px] text-slate-400 mb-0.5">Feed BMP Pressão</label>
-                            <input type="text" id="cfgFeedBmpPres" value="bmp180-pressao" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
-                        </div>
-                        <div>
-                            <label for="cfgFeedLux" class="block text-[11px] text-slate-400 mb-0.5">Feed BH1750 Lux</label>
-                            <input type="text" id="cfgFeedLux" value="lux-bh1750" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
-                        </div>
-                    </div>
-                </div>
-
-                <hr class="border-slate-800 my-2">
-
-                <!-- GitHub Repository Config -->
-                <div class="space-y-3">
-                    <h4 class="text-xs font-semibold text-emerald-400 tracking-wider uppercase flex items-center gap-1.5">
-                        <i class="fa-brands fa-github"></i> GitHub (Galeria de Fotos)
-                    </h4>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label for="cfgGhUser" class="block text-xs font-medium text-slate-300 mb-1">Usuário GitHub</label>
-                            <input type="text" id="cfgGhUser" value="Gui-Leite" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
-                        </div>
-                        <div>
-                            <label for="cfgGhRepo" class="block text-xs font-medium text-slate-300 mb-1">Repositório</label>
-                            <input type="text" id="cfgGhRepo" value="painel-estufa" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label for="cfgGhFolder" class="block text-xs font-medium text-slate-300 mb-1">Pasta das Fotos</label>
-                            <input type="text" id="cfgGhFolder" value="fotos" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
-                        </div>
-                        <div>
-                            <label for="cfgGhBranch" class="block text-xs font-medium text-slate-300 mb-1">Branch</label>
-                            <input type="text" id="cfgGhBranch" value="main" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none" required>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="cfgGhToken" class="block text-xs font-medium text-slate-300 mb-1">
-                            GitHub Token <span class="text-slate-500 font-normal">(Opcional - evita limites de API)</span>
-                        </label>
-                        <input type="password" id="cfgGhToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none">
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-                    <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 text-xs text-slate-400 hover:text-white">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-xl text-xs shadow-lg shadow-emerald-900/30 transition">
-                        Salvar e Atualizar
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL 2: Fullscreen Photo Zoom Modal -->
-    <div id="zoomModal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-between p-4 hidden">
-        <div class="w-full flex items-center justify-between text-white max-w-7xl">
-            <span id="zoomFileName" class="text-xs font-mono text-slate-300">Foto em Alta Resolução</span>
-            <button onclick="closeZoomModal()" class="p-2 text-slate-400 hover:text-white text-xl">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-        <div class="flex-grow w-full flex items-center justify-center my-2 overflow-hidden">
-            <img id="zoomImage" src="" alt="Foto Ampliada" class="max-h-full max-w-full object-contain rounded-lg shadow-2xl">
-        </div>
-        <div class="text-center text-xs text-slate-400 py-1 font-mono">
-            Modo de Visualização Expandida
-        </div>
-    </div>
-
-    <!-- Toast Notification Box -->
-    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
     <script>
-        // Default Configuration Constants
-        const DEFAULT_CONFIG = {
-            aioUsername: '',
-            aioKey: '',
-            feedDhtTemp: 'dht22-temp',
-            feedDhtHum: 'dht22-umidade',
-            feedBmpPres: 'bmp180-pressao',
-            feedLux: 'lux-bh1750',
-            ghUser: 'Gui-Leite',
-            ghRepo: 'painel-estufa',
-            ghFolder: 'fotos',
-            ghBranch: 'main',
-            ghToken: ''
+        // =========================================================================
+        // 1. CONSTANTES E CONFIGURAÇÕES
+        // =========================================================================
+        const AIO_USERNAME = "GuilhermeFLeite";
+        const FEEDS = {
+            temperatura: "dht22.temperaturadht22", 
+            umidade: "dht22.umidadedht22",        
+            pressao: "bmp180.pressaobmp",
+            luminosidade: "luminosidade.lux"
+        };
+        
+        const GITHUB_OWNER = "Gui-Leite";
+        const GITHUB_REPO = "painel-estufa";
+        const GITHUB_BRANCH = "main";
+        const GITHUB_IMAGE_PATH = "fotos/estufa4.jpeg";
+
+        // =========================================================================
+        // 2. VARIÁVEIS DE ESTADO E CACHE
+        // =========================================================================
+        let chartInstance = null;
+        let activeMetric = 'temperatura'; 
+        let activeRange = '24h';
+        
+        // Cache isolado para respostas rápidas de UI
+        const chartCache = {
+            '24h': { temperatura: null, umidade: null, pressao: null, luminosidade: null },
+            '30d': { temperatura: null, umidade: null, pressao: null, luminosidade: null }
         };
 
-        // Application State
-        let appConfig = { ...DEFAULT_CONFIG };
-        let historyChart = null;
-        let currentChartPeriod = '24h'; // '24h' or '30d'
-        let currentChartMetric = 'temp'; // 'temp', 'hum', 'pres', 'lux'
-        let currentPhotoIndex = 0;
-        let photoList = []; // Array of photo objects from GitHub
-        let filteredPhotoList = []; // Array after date filtering
-        let telemetryData = {
-            temp: [],
-            hum: [],
-            pres: [],
-            lux: []
-        };
+        document.addEventListener("DOMContentLoaded", () => {
+            initDashboard();
+        });
 
-        window.onload = function() {
-            loadConfigFromStorage();
-            initChart();
+        function initDashboard() {
+            const key = localStorage.getItem('AIO_KEY');
+            updateButtonStyles(); // Força o CSS inicial dos botões ativos
             
-            // Check if credentials exist
-            if (!appConfig.aioUsername || !appConfig.aioKey) {
-                showToast('Por favor, configure suas credenciais do Adafruit IO nas Configurações.', 'warning');
-                openSettingsModal();
+            if (key) {
+                document.getElementById('config-panel').classList.add('hidden');
+                // Dispara carregamento inicial completo
+                loadFullDashboard();
+                // Configura ciclo silencioso de 5 minutos (300.000 ms)
+                setInterval(silentBackgroundSync, 300000);
             } else {
-                loadAllData();
-            }
-
-            // Auto refresh telemetry every 60 seconds
-            setInterval(() => {
-                if (appConfig.aioUsername && appConfig.aioKey) {
-                    fetchRealTimeTelemetry();
-                }
-            }, 60000);
-        };
-
-        function loadConfigFromStorage() {
-            const stored = localStorage.getItem('estufa_app_config');
-            if (stored) {
-                try {
-                    appConfig = { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
-                } catch(e) {
-                    console.error('Erro ao ler localStorage', e);
-                }
-            }
-            // Populate settings modal fields
-            document.getElementById('cfgAioUsername').value = appConfig.aioUsername || '';
-            document.getElementById('cfgAioKey').value = appConfig.aioKey || '';
-            document.getElementById('cfgFeedDhtTemp').value = appConfig.feedDhtTemp || 'dht22-temp';
-            document.getElementById('cfgFeedDhtHum').value = appConfig.feedDhtHum || 'dht22-umidade';
-            document.getElementById('cfgFeedBmpPres').value = appConfig.feedBmpPres || 'bmp180-pressao';
-            document.getElementById('cfgFeedLux').value = appConfig.feedLux || 'lux-bh1750';
-            document.getElementById('cfgGhUser').value = appConfig.ghUser || 'Gui-Leite';
-            document.getElementById('cfgGhRepo').value = appConfig.ghRepo || 'painel-estufa';
-            document.getElementById('cfgGhFolder').value = appConfig.ghFolder || 'fotos';
-            document.getElementById('cfgGhBranch').value = appConfig.ghBranch || 'main';
-            document.getElementById('cfgGhToken').value = appConfig.ghToken || '';
-        }
-
-        function saveSettings(event) {
-            event.preventDefault();
-            appConfig.aioUsername = document.getElementById('cfgAioUsername').value.trim();
-            appConfig.aioKey = document.getElementById('cfgAioKey').value.trim();
-            appConfig.feedDhtTemp = document.getElementById('cfgFeedDhtTemp').value.trim() || 'dht22-temp';
-            appConfig.feedDhtHum = document.getElementById('cfgFeedDhtHum').value.trim() || 'dht22-umidade';
-            appConfig.feedBmpPres = document.getElementById('cfgFeedBmpPres').value.trim() || 'bmp180-pressao';
-            appConfig.feedLux = document.getElementById('cfgFeedLux').value.trim() || 'lux-bh1750';
-            appConfig.ghUser = document.getElementById('cfgGhUser').value.trim() || 'Gui-Leite';
-            appConfig.ghRepo = document.getElementById('cfgGhRepo').value.trim() || 'painel-estufa';
-            appConfig.ghFolder = document.getElementById('cfgGhFolder').value.trim() || 'fotos';
-            appConfig.ghBranch = document.getElementById('cfgGhBranch').value.trim() || 'main';
-            appConfig.ghToken = document.getElementById('cfgGhToken').value.trim();
-
-            localStorage.setItem('estufa_app_config', JSON.stringify(appConfig));
-            closeSettingsModal();
-            showToast('Configurações salvas com sucesso!', 'success');
-            loadAllData();
-        }
-
-        function openSettingsModal() {
-            document.getElementById('settingsModal').classList.remove('hidden');
-        }
-
-        function closeSettingsModal() {
-            document.getElementById('settingsModal').classList.add('hidden');
-        }
-
-        async function loadAllData() {
-            const refreshIcon = document.getElementById('refreshIcon');
-            if (refreshIcon) refreshIcon.classList.add('fa-spin');
-            
-            await Promise.allSettled([
-                fetchRealTimeTelemetry(),
-                fetchChartHistoryData(),
-                fetchGitHubPhotos()
-            ]);
-
-            if (refreshIcon) refreshIcon.classList.remove('fa-spin');
-        }
-
-        async function fetchRealTimeTelemetry() {
-            if (!appConfig.aioUsername || !appConfig.aioKey) return;
-
-            const feeds = [
-                { id: 'valDhtTemp', key: appConfig.feedDhtTemp, decimals: 1 },
-                { id: 'valDhtHum', key: appConfig.feedDhtHum, decimals: 1 },
-                { id: 'valBmpPres', key: appConfig.feedBmpPres, decimals: 0 },
-                { id: 'valLux', key: appConfig.feedLux, decimals: 0 }
-            ];
-
-            const headers = { 'X-AIO-Key': appConfig.aioKey };
-
-            let hasSuccess = false;
-
-            for (const feed of feeds) {
-                try {
-                    const res = await fetch(`https://io.adafruit.com/api/v2/${appConfig.aioUsername}/feeds/${feed.key}/data/last`, { headers });
-                    if (res.ok) {
-                        const data = await res.json();
-                        const val = parseFloat(data.value);
-                        if (!isNaN(val)) {
-                            document.getElementById(feed.id).innerText = val.toFixed(feed.decimals);
-                            hasSuccess = true;
-                        }
-                    } else {
-                        document.getElementById(feed.id).innerText = '--';
-                    }
-                } catch(e) {
-                    console.error(`Erro ao buscar feed ${feed.key}:`, e);
-                    document.getElementById(feed.id).innerText = '--';
-                }
-            }
-
-            if (hasSuccess) {
-                const now = new Date();
-                document.getElementById('lastUpdatedText').innerText = `Última atualização: ${now.toLocaleTimeString()}`;
-                document.getElementById('syncStatusBadge').className = "text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-normal";
-                document.getElementById('syncStatusBadge').innerHTML = '<i class="fa-solid fa-circle text-[8px] animate-pulse mr-1"></i> Conectado';
-            } else {
-                document.getElementById('syncStatusBadge').className = "text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-normal";
-                document.getElementById('syncStatusBadge').innerHTML = '<i class="fa-solid fa-circle text-[8px] mr-1"></i> Sem Dados';
+                document.getElementById('config-panel').classList.remove('hidden');
             }
         }
 
-        async function fetchChartHistoryData() {
-            if (!appConfig.aioUsername || !appConfig.aioKey) return;
-
-            const overlay = document.getElementById('chartLoadingOverlay');
-            if (overlay) overlay.classList.remove('hidden');
-
-            const headers = { 'X-AIO-Key': appConfig.aioKey };
-            const metricMap = {
-                temp: appConfig.feedDhtTemp,
-                hum: appConfig.feedDhtHum,
-                pres: appConfig.feedBmpPres,
-                lux: appConfig.feedLux
-            };
-
-            // Limit data requested based on period
-            const limit = currentChartPeriod === '24h' ? 300 : 1000;
-
-            try {
-                const activeFeedKey = metricMap[currentChartMetric];
-                const res = await fetch(`https://io.adafruit.com/api/v2/${appConfig.aioUsername}/feeds/${activeFeedKey}/data?limit=${limit}`, { headers });
-                
-                if (res.ok) {
-                    const rawData = await res.json();
-                    
-                    // Parse and order data chronologically
-                    let parsedData = rawData.map(item => ({
-                        x: new Date(item.created_at),
-                        y: parseFloat(item.value)
-                    })).filter(pt => !isNaN(pt.y) && !isNaN(pt.x.getTime()));
-
-                    parsedData.sort((a, b) => a.x - b.x);
-
-                    // Grouping logic based on interval requirements
-                    // 24 Hours -> 5 minutes buckets (300,000 ms)
-                    // 30 Days -> 30 minutes buckets (1,800,000 ms)
-                    const bucketSizeMs = currentChartPeriod === '24h' ? (5 * 60 * 1000) : (30 * 60 * 1000);
-                    const groupedData = groupDataByTimeBucket(parsedData, bucketSizeMs);
-
-                    updateChartData(groupedData);
-                } else {
-                    updateChartData([]);
-                }
-            } catch(e) {
-                console.error('Erro ao buscar histórico do gráfico:', e);
-                updateChartData([]);
-            } finally {
-                if (overlay) overlay.classList.add('hidden');
+        function salvarChave() {
+            const key = document.getElementById('input-aio-key').value.trim();
+            if (key) {
+                localStorage.setItem('AIO_KEY', key);
+                location.reload();
             }
         }
 
-        function groupDataByTimeBucket(dataPoints, bucketSizeMs) {
-            if (!dataPoints || dataPoints.length === 0) return [];
+        function limparChave() {
+            if(confirm("Remover chave e sair?")) {
+                localStorage.removeItem('AIO_KEY');
+                location.reload();
+            }
+        }
 
-            const buckets = {};
-            dataPoints.forEach(pt => {
-                const bucketTimestamp = Math.floor(pt.x.getTime() / bucketSizeMs) * bucketSizeMs;
-                if (!buckets[bucketTimestamp]) {
-                    buckets[bucketTimestamp] = { sum: 0, count: 0 };
+        function updateButtonStyles() {
+            // Estiliza Botões de Métrica
+            ['temperatura', 'umidade', 'pressao', 'luminosidade'].forEach(m => {
+                const btn = document.getElementById(`btn-met-${m}`);
+                btn.className = 'px-3 py-1.5 rounded transition-colors cursor-pointer text-slate-400 hover:text-slate-200';
+                if (m === activeMetric) {
+                    if (m === 'temperatura') btn.classList.add('bg-amber-500/20', 'text-amber-400', 'font-medium');
+                    if (m === 'umidade') btn.classList.add('bg-sky-500/20', 'text-sky-400', 'font-medium');
+                    if (m === 'pressao') btn.classList.add('bg-indigo-500/20', 'text-indigo-400', 'font-medium');
+                    if (m === 'luminosidade') btn.classList.add('bg-yellow-400/20', 'text-yellow-400', 'font-medium');
                 }
-                buckets[bucketTimestamp].sum += pt.y;
-                buckets[bucketTimestamp].count += 1;
             });
 
-            const result = Object.keys(buckets).map(ts => ({
-                x: new Date(parseInt(ts)),
-                y: parseFloat((buckets[ts].sum / buckets[ts].count).toFixed(2))
-            }));
-
-            result.sort((a, b) => a.x - b.x);
-            return result;
+            // Estiliza Botões de Período
+            ['24h', '30d'].forEach(p => {
+                const btn = document.getElementById(`btn-per-${p}`);
+                btn.className = 'px-3 py-1.5 rounded transition-colors cursor-pointer text-slate-400 hover:text-slate-200';
+                if (p === activeRange) btn.classList.add('bg-slate-700', 'text-slate-200', 'font-medium');
+            });
         }
 
-        function initChart() {
-            const ctx = document.getElementById('historyChart').getContext('2d');
+        async function handleMetricClick(novaMetrica) {
+            if (activeMetric === novaMetrica) return;
+            activeMetric = novaMetrica;
+            updateButtonStyles(); // Atualização visual instantânea!
+            await updateChartDisplay(); 
+        }
+
+        async function handleRangeClick(novoPeriodo) {
+            if (activeRange === novoPeriodo) return;
+            activeRange = novoPeriodo;
+            updateButtonStyles(); // Atualização visual instantânea!
+            await updateChartDisplay();
+        }
+
+        async function loadFullDashboard() {
+            fetchRealTimeCards();
+            fetchGitHubImage();
+            await updateChartDisplay();
+            updateLastSyncText();
+        }
+
+        async function silentBackgroundSync() {
+            // Roda silenciosamente a cada 5 min. Sem overlay, sem recarregar tela.
+            await fetchRealTimeCards();
+            await fetchGitHubImage();
             
-            historyChart = new Chart(ctx, {
+            // Forçamos limpeza do cache da view atual para pegar dados novos no gráfico
+            chartCache[activeRange][activeMetric] = null;
+            await updateChartDisplay(true); // O parâmetro 'true' esconde o overlay
+            
+            updateLastSyncText();
+        }
+
+        function updateLastSyncText() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('last-sync-time').innerText = `Sincronizado às ${timeStr}`;
+        }
+
+        async function fetchGitHubImage() {
+            const imgEl = document.getElementById('cam-imagem');
+            const placeholder = document.getElementById('cam-placeholder');
+            const timestamp = Date.now();
+            const urlRaw = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${GITHUB_IMAGE_PATH}?t=${timestamp}`;
+            
+            imgEl.onload = () => {
+                imgEl.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            };
+            imgEl.src = urlRaw;
+        }
+
+        async function fetchRealTimeCards() {
+            const key = localStorage.getItem('AIO_KEY');
+            if(!key) return;
+
+            const requests = [
+                { feed: FEEDS.temperatura, id: 'rt-temp-val' },
+                { feed: FEEDS.umidade, id: 'rt-umid-val' },
+                { feed: FEEDS.pressao, id: 'rt-press-val' },
+                { feed: FEEDS.luminosidade, id: 'rt-lux-val' }
+            ];
+
+            for (const req of requests) {
+                fetch(`https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${req.feed}/data/last`, { headers: { 'X-AIO-KEY': key }})
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.value) {
+                        const val = parseFloat(data.value).toFixed(1);
+                        document.getElementById(req.id).innerText = isNaN(val) ? "--" : val;
+                    }
+                }).catch(e => console.log("Erro em RT", e));
+            }
+        }
+
+        async function updateChartDisplay(isSilent = false) {
+            const cachedData = chartCache[activeRange][activeMetric];
+
+            // Se tem cache, desenha direto sem requisição
+            if (cachedData) {
+                renderChart(cachedData.labels, cachedData.values, activeMetric);
+                return;
+            }
+
+            // Se não tem cache, precisamos baixar. 
+            // Mostra o Overlay (apenas se não for sincronização silenciosa)
+            const overlay = document.getElementById('chart-loading-overlay');
+            if (!isSilent) overlay.classList.remove('hidden');
+
+            try {
+                const horas = activeRange === '24h' ? 24 : 720;
+                const rawData = await fetchAllHistoricalData(FEEDS[activeMetric], horas);
+                const processed = processDownsampling(rawData, activeRange);
+                
+                // Guarda no cache
+                chartCache[activeRange][activeMetric] = processed;
+                
+                // Desenha
+                renderChart(processed.labels, processed.values, activeMetric);
+            } catch (err) {
+                console.error("Erro ao puxar dados do gráfico", err);
+            } finally {
+                // Esconde overlay sempre no final
+                overlay.classList.add('hidden');
+            }
+        }
+
+        async function fetchAllHistoricalData(feedName, hours) {
+            const key = localStorage.getItem('AIO_KEY');
+            let allData = [];
+            
+            let startTime = new Date(Date.now() - (hours * 3600 * 1000));
+            let endTime = new Date();
+
+            // Loop de paginação sem limite fixo arbitrário para pegar todos os pontos até start_time
+            while(true) {
+                const url = `https://io.adafruit.com/api/v2/${AIO_USERNAME}/feeds/${feedName}/data?start_time=${startTime.toISOString()}&end_time=${endTime.toISOString()}&limit=1000`;
+                const response = await fetch(url, { headers: { 'X-AIO-KEY': key } });
+                
+                if (!response.ok) break;
+                
+                const dataChunk = await response.json();
+                if (dataChunk.length === 0) break; // Sem mais dados
+                
+                allData.push(...dataChunk);
+
+                // O último item do chunk é o mais antigo retornado. 
+                // Avançamos o end_time para continuar puxando pro passado.
+                const oldestInChunk = new Date(dataChunk[dataChunk.length - 1].created_at);
+                endTime = new Date(oldestInChunk.getTime() - 1); // -1 ms para não duplicar
+
+                if (endTime <= startTime) break;
+            }
+
+            return allData;
+        }
+
+        function processDownsampling(rawData, periodo) {
+            if (!rawData || rawData.length === 0) return { labels: [], values: [] };
+
+            // Ordenar do mais Antigo para o mais Novo (Esquerda -> Direita)
+            rawData.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            // Downsampling Dinâmico garantindo performance e legibilidade (~250 pontos max)
+            const targetPoints = 250;
+            const step = Math.max(1, Math.ceil(rawData.length / targetPoints));
+            
+            const labels = [];
+            const values = [];
+
+            for (let i = 0; i < rawData.length; i += step) {
+                const item = rawData[i];
+                const date = new Date(item.created_at);
+                
+                let label = '';
+                if (periodo === '24h') {
+                    label = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                } else {
+                    label = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' ' + 
+                            date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                }
+                
+                labels.push(label);
+                values.push(parseFloat(item.value).toFixed(2));
+            }
+
+            return { labels, values };
+        }
+
+        function renderChart(labels, values, metricaAtual) {
+            const ctx = document.getElementById('historicalChart').getContext('2d');
+            
+            let corLinha, corFundo;
+            if (metricaAtual === 'temperatura') { corLinha = '#fbbf24'; corFundo = 'rgba(251, 191, 36, 0.1)'; } 
+            else if (metricaAtual === 'umidade') { corLinha = '#38bdf8'; corFundo = 'rgba(56, 189, 248, 0.1)'; }
+            else if (metricaAtual === 'pressao') { corLinha = '#818cf8'; corFundo = 'rgba(129, 140, 248, 0.1)'; }
+            else { corLinha = '#facc15'; corFundo = 'rgba(250, 204, 21, 0.1)'; }
+
+            if (chartInstance) chartInstance.destroy();
+
+            Chart.defaults.color = '#64748b';
+            Chart.defaults.font.family = 'Inter';
+
+            chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
+                    labels: labels,
                     datasets: [{
-                        label: 'Medição',
-                        data: [],
-                        borderColor: '#059669',
-                        backgroundColor: 'rgba(5, 150, 105, 0.12)',
+                        label: metricaAtual.toUpperCase(),
+                        data: values,
+                        borderColor: corLinha,
+                        backgroundColor: corFundo,
                         borderWidth: 2,
-                        pointRadius: 2.5,
-                        pointHoverRadius: 5,
+                        pointRadius: 0,
+                        pointHitRadius: 15,
                         fill: true,
                         tension: 0.3
                     }]
@@ -741,361 +457,29 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                tooltipFormat: 'dd/MM/yyyy HH:mm',
-                                displayFormats: {
-                                    minute: 'HH:mm',
-                                    hour: 'HH:mm',
-                                    day: 'dd/MM'
-                                }
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.05)'
-                            },
-                            ticks: {
-                                color: '#94a3b8',
-                                font: { size: 10 }
-                            }
-                        },
-                        y: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.05)'
-                            },
-                            ticks: {
-                                color: '#94a3b8',
-                                font: { size: 10 }
-                            }
-                        }
-                    },
-                    plugins: {
+                    interaction: { mode: 'index', intersect: false },
+                    animation: { duration: 0 }, // Zera animação nativa pesada, já respondemos rápido
+                    plugins: { 
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: '#0f172a',
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
                             titleColor: '#e2e8f0',
-                            bodyColor: '#10b981',
-                            borderColor: '#334155',
-                            borderWidth: 1,
-                            padding: 10,
-                            displayColors: false
+                            bodyColor: '#cbd5e1',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }, 
+                            ticks: { maxTicksLimit: window.innerWidth < 600 ? 5 : 8 } 
+                        },
+                        y: { 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' } 
                         }
                     }
                 }
             });
-        }
-
-        function updateChartData(dataset) {
-            if (!historyChart) return;
-
-            const metricConfigs = {
-                temp: { label: 'Temperatura (°C)', color: '#059669', bg: 'rgba(5, 150, 105, 0.15)' },
-                hum: { label: 'Umidade (%)', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' },
-                pres: { label: 'Pressão (hPa)', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)' },
-                lux: { label: 'Luminosidade (Lux)', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' }
-            };
-
-            const cfg = metricConfigs[currentChartMetric] || metricConfigs.temp;
-
-            historyChart.data.datasets[0].label = cfg.label;
-            historyChart.data.datasets[0].borderColor = cfg.color;
-            historyChart.data.datasets[0].backgroundColor = cfg.bg;
-            historyChart.data.datasets[0].data = dataset;
-
-            // Auto Dynamic Scale: Chart.js automatically fits the bounds based on dataset x-values
-            historyChart.options.scales.x.time.unit = currentChartPeriod === '24h' ? 'hour' : 'day';
-            historyChart.update('none');
-        }
-
-        function setChartPeriod(period) {
-            currentChartPeriod = period;
-            document.getElementById('pillPeriod24h').classList.toggle('active', period === '24h');
-            document.getElementById('pillPeriod24h').classList.toggle('text-slate-400', period !== '24h');
-            document.getElementById('pillPeriod30d').classList.toggle('active', period === '30d');
-            document.getElementById('pillPeriod30d').classList.toggle('text-slate-400', period !== '30d');
-            
-            fetchChartHistoryData();
-        }
-
-        function setChartMetric(metric) {
-            currentChartMetric = metric;
-            const metrics = ['temp', 'hum', 'pres', 'lux'];
-            metrics.forEach(m => {
-                const btn = document.getElementById(`pillMetric${m.charAt(0).toUpperCase() + m.slice(1)}`);
-                if (btn) {
-                    if (m === metric) {
-                        btn.className = 'pill-btn active px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5';
-                    } else {
-                        btn.className = 'pill-btn text-slate-400 px-3 py-1.5 text-xs font-medium rounded-lg transition flex items-center gap-1.5 hover:text-white';
-                    }
-                }
-            });
-
-            fetchChartHistoryData();
-        }
-
-        async function fetchGitHubPhotos() {
-            const loadingState = document.getElementById('photoLoadingState');
-            const errorState = document.getElementById('photoErrorState');
-            const mainImg = document.getElementById('mainPhotoImage');
-            const overlay = document.getElementById('photoCaptionOverlay');
-
-            loadingState.classList.remove('hidden');
-            errorState.classList.add('hidden');
-            mainImg.classList.add('hidden');
-            overlay.classList.add('hidden');
-
-            const { ghUser, ghRepo, ghFolder, ghBranch, ghToken } = appConfig;
-
-            // Standard URL requested: https://api.github.com/repos/Gui-Leite/painel-estufa/contents/fotos
-            const url = `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${ghFolder}?ref=${ghBranch}`;
-
-            const headers = {};
-            if (ghToken) {
-                headers['Authorization'] = `token ${ghToken}`;
-            }
-
-            try {
-                const res = await fetch(url, { headers });
-
-                if (!res.ok) {
-                    if (res.status === 404) {
-                        showPhotoError('Repositório ou Pasta não encontrada', `A pasta '/${ghFolder}' não foi encontrada no repositório ${ghUser}/${ghRepo} na branch '${ghBranch}'.`);
-                    } else if (res.status === 403) {
-                        showPhotoError('Limite da API do GitHub atingido', 'O GitHub restringiu o limite de requisições anônimas. Insira um GitHub Token nas Configurações.');
-                    } else {
-                        showPhotoError('Erro ao carregar fotos', `Erro HTTP ${res.status} retornado pelo GitHub.`);
-                    }
-                    return;
-                }
-
-                const data = await res.json();
-
-                if (!Array.isArray(data)) {
-                    showPhotoError('Caminho inválido', 'O caminho informado não aponta para um diretório com fotos.');
-                    return;
-                }
-
-                // Filter image extensions
-                const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
-                photoList = data.filter(file => {
-                    if (file.type !== 'file') return false;
-                    const name = file.name.toLowerCase();
-                    return validExtensions.some(ext => name.endsWith(ext));
-                });
-
-                if (photoList.length === 0) {
-                    showPhotoError('Nenhuma foto na pasta', `A pasta '/${ghFolder}' está vazia ou não contém imagens com formatos suportados.`);
-                    return;
-                }
-
-                // Sort photos (newest/alphabetical based on filename)
-                photoList.reverse();
-
-                filteredPhotoList = [...photoList];
-                currentPhotoIndex = 0;
-
-                renderPhotoGalleryUI();
-                displayCurrentPhoto();
-
-            } catch(e) {
-                console.error('Erro ao listar fotos do GitHub:', e);
-                showPhotoError('Erro de Conexão', 'Não foi possível conectar à API do GitHub. Verifique sua conexão com a internet.');
-            } finally {
-                loadingState.classList.add('hidden');
-            }
-        }
-
-        function showPhotoError(title, message) {
-            document.getElementById('photoLoadingState').classList.add('hidden');
-            document.getElementById('photoErrorTitle').innerText = title;
-            document.getElementById('photoErrorMessage').innerText = message;
-            document.getElementById('photoErrorState').classList.remove('hidden');
-            document.getElementById('photoErrorState').classList.add('flex');
-            document.getElementById('photoCountBadge').innerText = '0 fotos';
-        }
-
-        function renderPhotoGalleryUI() {
-            // Update photo count badge
-            document.getElementById('photoCountBadge').innerText = `${filteredPhotoList.length} ${filteredPhotoList.length === 1 ? 'foto' : 'fotos'}`;
-
-            // Populate dropdown
-            const dropdown = document.getElementById('photoSelectDropdown');
-            dropdown.innerHTML = '';
-
-            filteredPhotoList.forEach((photo, index) => {
-                const option = document.createElement('option');
-                option.value = index;
-                option.className = 'bg-slate-900';
-                option.innerText = `${index + 1}. ${photo.name}`;
-                dropdown.appendChild(option);
-            });
-
-            // Populate thumbnail strip
-            const strip = document.getElementById('thumbnailStrip');
-            strip.innerHTML = '';
-
-            filteredPhotoList.forEach((photo, index) => {
-                const thumb = document.createElement('img');
-                thumb.src = photo.download_url;
-                thumb.alt = photo.name;
-                thumb.className = `w-16 h-12 object-cover rounded-lg cursor-pointer border-2 transition-all flex-shrink-0 ${index === currentPhotoIndex ? 'border-emerald-500 opacity-100 scale-105' : 'border-slate-800 opacity-60 hover:opacity-100'}`;
-                thumb.onclick = () => selectPhotoByIndex(index);
-                strip.appendChild(thumb);
-            });
-        }
-
-        function displayCurrentPhoto() {
-            if (filteredPhotoList.length === 0) return;
-
-            const photo = filteredPhotoList[currentPhotoIndex];
-            const mainImg = document.getElementById('mainPhotoImage');
-            const overlay = document.getElementById('photoCaptionOverlay');
-
-            // Use the direct download_url from GitHub API response
-            mainImg.src = photo.download_url;
-            mainImg.classList.remove('hidden');
-
-            document.getElementById('photoFileNameText').innerText = photo.name;
-            document.getElementById('photoMetaText').innerText = `Tamanho: ${(photo.size / 1024).toFixed(1)} KB`;
-            document.getElementById('photoIndexBadge').innerText = `${currentPhotoIndex + 1} / ${filteredPhotoList.length}`;
-
-            // Update dropdown
-            document.getElementById('photoSelectDropdown').value = currentPhotoIndex;
-
-            // Update nav buttons disabled state
-            document.getElementById('btnPrevPhoto').disabled = currentPhotoIndex === 0;
-            document.getElementById('btnNextPhoto').disabled = currentPhotoIndex === filteredPhotoList.length - 1;
-
-            // Highlight thumbnail
-            const strip = document.getElementById('thumbnailStrip');
-            Array.from(strip.children).forEach((thumb, idx) => {
-                if (idx === currentPhotoIndex) {
-                    thumb.className = 'w-16 h-12 object-cover rounded-lg cursor-pointer border-2 border-emerald-500 opacity-100 scale-105 flex-shrink-0';
-                    thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                } else {
-                    thumb.className = 'w-16 h-12 object-cover rounded-lg cursor-pointer border-2 border-slate-800 opacity-60 hover:opacity-100 flex-shrink-0';
-                }
-            });
-
-            overlay.classList.remove('hidden');
-            overlay.classList.add('flex');
-        }
-
-        function onMainPhotoLoaded() {
-            // Smooth reveal
-            document.getElementById('mainPhotoImage').style.opacity = '1';
-        }
-
-        function onMainPhotoError() {
-            showToast('Erro ao carregar a imagem original.', 'error');
-        }
-
-        function navigatePhoto(direction) {
-            const newIndex = currentPhotoIndex + direction;
-            if (newIndex >= 0 && newIndex < filteredPhotoList.length) {
-                currentPhotoIndex = newIndex;
-                displayCurrentPhoto();
-            }
-        }
-
-        function selectPhotoFromDropdown(indexStr) {
-            const idx = parseInt(indexStr);
-            if (!isNaN(idx) && idx >= 0 && idx < filteredPhotoList.length) {
-                currentPhotoIndex = idx;
-                displayCurrentPhoto();
-            }
-        }
-
-        function selectPhotoByIndex(idx) {
-            if (idx >= 0 && idx < filteredPhotoList.length) {
-                currentPhotoIndex = idx;
-                displayCurrentPhoto();
-            }
-        }
-
-        function filterPhotosByDate() {
-            const dateVal = document.getElementById('photoDatePicker').value; // YYYY-MM-DD
-            if (!dateVal) {
-                filteredPhotoList = [...photoList];
-            } else {
-                filteredPhotoList = photoList.filter(photo => {
-                    // Match date formatted inside filename e.g. 2026-03-28 or 20260328
-                    const cleanDate = dateVal.replace(/-/g, '');
-                    return photo.name.includes(dateVal) || photo.name.includes(cleanDate);
-                });
-            }
-
-            if (filteredPhotoList.length === 0) {
-                showToast('Nenhuma foto encontrada para a data selecionada.', 'warning');
-            } else {
-                showToast(`${filteredPhotoList.length} fotos encontradas para a data selecionada.`, 'success');
-            }
-
-            currentPhotoIndex = 0;
-            renderPhotoGalleryUI();
-            if (filteredPhotoList.length > 0) {
-                displayCurrentPhoto();
-            }
-        }
-
-        function clearDateFilter() {
-            document.getElementById('photoDatePicker').value = '';
-            filteredPhotoList = [...photoList];
-            currentPhotoIndex = 0;
-            renderPhotoGalleryUI();
-            if (filteredPhotoList.length > 0) {
-                displayCurrentPhoto();
-            }
-            showToast('Filtro de data removido.', 'info');
-        }
-
-        function openZoomModal() {
-            if (filteredPhotoList.length === 0) return;
-            const photo = filteredPhotoList[currentPhotoIndex];
-            document.getElementById('zoomImage').src = photo.download_url;
-            document.getElementById('zoomFileName').innerText = photo.name;
-            document.getElementById('zoomModal').classList.remove('hidden');
-        }
-
-        function closeZoomModal() {
-            document.getElementById('zoomModal').classList.add('hidden');
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-
-            const bgColors = {
-                success: 'bg-emerald-600 text-white',
-                error: 'bg-red-600 text-white',
-                warning: 'bg-amber-600 text-white',
-                info: 'bg-slate-800 text-slate-200 border border-slate-700'
-            };
-
-            const icons = {
-                success: 'fa-circle-check',
-                error: 'fa-circle-exclamation',
-                warning: 'fa-triangle-exclamation',
-                info: 'fa-circle-info'
-            };
-
-            toast.className = `px-4 py-3 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2 transition-all transform translate-y-2 opacity-0 pointer-events-auto ${bgColors[type] || bgColors.info}`;
-            toast.innerHTML = `<i class="fa-solid ${icons[type]} text-sm"></i> <span>${message}</span>`;
-
-            container.appendChild(toast);
-
-            // Animate in
-            setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            }, 50);
-
-            // Animate out
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
         }
     </script>
 </body>
