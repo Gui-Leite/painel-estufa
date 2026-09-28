@@ -529,27 +529,41 @@
         }
 
         async function updateChartDisplay(isSilent = false) {
-            const cachedData = chartCache[activeRange][activeMetric];
-
+            // 1. Congelar a métrica e o período exatos no momento do clique
+            const metricaDaBusca = activeMetric;
+            const periodoDaBusca = activeRange;
+        
+            const cachedData = chartCache[periodoDaBusca][metricaDaBusca];
+        
             if (cachedData) {
-                renderChart(cachedData.labels, cachedData.values, activeMetric);
+                // Usa a métrica congelada para renderizar
+                renderChart(cachedData.labels, cachedData.values, metricaDaBusca);
                 return;
             }
-
+        
             const overlay = document.getElementById('chart-loading-overlay');
             if (!isSilent) overlay.classList.remove('hidden');
-
+        
             try {
-                const horas = activeRange === '24h' ? 24 : 720;
-                const rawData = await fetchAllHistoricalData(FEEDS[activeMetric], horas);
-                const processed = processDownsampling(rawData, activeRange);
+                const horas = periodoDaBusca === '24h' ? 24 : 720;
                 
-                chartCache[activeRange][activeMetric] = processed;
-                renderChart(processed.labels, processed.values, activeMetric);
+                // 2. Fazer o fetch usando a métrica que congelámos, e não a variável global
+                const rawData = await fetchAllHistoricalData(FEEDS[metricaDaBusca], horas);
+                const processed = processDownsampling(rawData, periodoDaBusca);
+                
+                // 3. Guardar os dados no espaço de cache correto
+                chartCache[periodoDaBusca][metricaDaBusca] = processed;
+                
+                // 4. Apenas desenhar no ecrã se o utilizador não tiver clicado noutro botão entretanto
+                if (activeMetric === metricaDaBusca && activeRange === periodoDaBusca) {
+                    renderChart(processed.labels, processed.values, metricaDaBusca);
+                }
             } catch (err) {
                 console.error("Erro ao puxar dados do gráfico", err);
             } finally {
-                overlay.classList.add('hidden');
+                if (activeMetric === metricaDaBusca && activeRange === periodoDaBusca) {
+                    overlay.classList.add('hidden');
+                }
             }
         }
 
